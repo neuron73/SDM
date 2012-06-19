@@ -1,0 +1,5 @@
+AuthName "SDM"
+AuthType Basic
+AuthUserFile /usr/lib/cgi-bin/SDM/.htpasswd
+
+require valid-user

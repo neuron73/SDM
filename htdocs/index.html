@@ -1,0 +1,492 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" /> 
+		<script src="lib/require.js"></script>
+		<style>
+			body {
+				margin: 0px;
+				padding: 0px;
+				font-family: monospace;;
+				font-size: 14px;
+				height: 100%;
+				width: 100%;
+			}
+
+			table#main {
+				overflow: hidden;
+			}
+
+			.navigation {
+				width: 100%;
+				border-bottom: 1px solid gray;
+			}
+
+			.navigation td {
+				padding: 8px;
+			}
+
+			#terminals {
+				overflow: auto;
+				margin: 4px 8px;
+				width: 350px;
+			}
+
+			#patients {
+				overflow: auto;
+				margin: 4px 8px;
+				width: 350px;
+			}
+
+			#card {
+				margin: 4px 8px;
+			}
+
+			.delimiter {
+				margin: 10px 0px;
+				height: 1px;
+				overflow: hidden;
+				border-top: 1px solid #555;
+			}
+
+			.meas_submenu {
+				padding: 5px;
+			}
+
+			.active_meas {
+				background-color: #f2f2f2;
+				padding: 3px 0px;
+				margin: 3px 0px;
+			}
+
+			#meas_list div {
+				padding-left: 10px;
+			}
+
+			#abp_meas_list {
+				overflow-y: scroll;
+				width: 230px;
+				margin: 10px;
+			}
+
+			#abp_meas_list td {
+				cursor: default;
+			}
+
+			#abp_meas_list .active {
+				background-color: #eeeeee;
+			}
+
+			a {
+				color: black;
+			}
+
+			a:hover {
+				color: red;
+			}
+
+			input[type="text"] {
+				border: 1px solid gray;
+				padding: 2px 4px;
+				margin: 1px;
+			}
+
+			input[type="text"]:focus {
+				border: 2px solid #444 !important;
+				margin: 0px !important;
+				background-color: white !important;
+			}
+
+			input.empty {
+				background-color: #f8f8f8;
+			}
+
+			select {
+				margin: 1px 0px;
+			}
+
+			button, input[type="submit"] {
+				padding: 3px 25px;
+				margin: 2px 0px;
+			}
+		</style>
+		<script>
+			(function() {
+				var $ = require("utils", "web", "json");
+				var SDM = require("SDM");
+
+				Math.sum = function(A) {
+					var sum = 0;
+					for (var i = 0; i < A.length; i++) {
+						sum += A[i];
+					}
+					return sum;
+				};
+
+				Math.mean = function(A) {
+					return Math.sum(A) / A.length;
+				};
+
+				Math.vector = {
+					min: function(A) {
+						var min;
+						for (var i = 0; i < A.length; i++) {
+							if (min == null || A[i] < min)
+								min = A[i];
+						}
+						return min;
+					},
+					max: function(A) {
+						var max;
+						for (var i = 0; i < A.length; i++) {
+							if (max == null || A[i] > max)
+								max = A[i];
+						}
+						return max;
+					}
+				};
+
+				// standard deviation
+				Math.std = function(values) {
+					var sum = 0;
+					var count = values.length;
+					for (var i = 0; i < count; i++) {
+						sum += values[i];
+					}
+					var avg = sum / count;
+					var sum_square_diff = 0;
+					for (var i = 0; i < count; i++) {
+						var diff = values[i] - avg;
+						sum_square_diff += diff * diff;	
+					}
+					return Math.sqrt(sum_square_diff / (count - 1));
+				};
+
+				window.UI = new SDM.Interface("/cgi-bin/SDM/SDM.pl", "/cgi-bin/");
+
+				window.onresize = 		$.F(UI, UI.event, ["resize"]);
+				window.add_meas = 		$.F(UI, UI.event, ["add_meas"]);
+				window.add_meas_select = 	$.F(UI, UI.event, ["add_meas_select"]);
+				window.add_meas_callback = 	$.F(UI, UI.event, ["add_meas_callback"]);
+				window.add_patient = 		$.F(UI, UI.event, ["add_patient"]);
+				window.card_monitoring_update =	$.F(UI, UI.event, ["card_monitoring_update"]);
+				window.update_analysis = 	$.F(UI, UI.event, ["update_analysis"]);
+
+				window.onload = function() {
+					UI.init();
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<table id="main" cellpadding="0" cellspacing="0">
+			<tr>
+				<td colspan="4" style="height: 30px">
+					<table class="navigation" width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td>
+								<div id="navigation"></div>
+							</td>
+							<td id="auth_user" style="width: 110px; background-color: #eee; text-align: center">
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top">
+					<table cellpadding="0" cellspacing="0" height="100%">
+						<tr>
+							<td valign="top" id="tab_terminals">
+								<div id="terminals"></div>
+							</td>
+							<td valign="top" id="tab_patients">
+								<div id="patients"></div>
+							</td>
+							<td valign="top" style="border-right: 1px solid gray">
+								<div id="card" style="display: none">
+									<div id="patient_name" style="display: none"></div>
+									<div id="card_menu" style="padding: 10px 0px 20px; border-bottom: 1px solid gray; margin-bottom: 15px"></div>
+									<div>Измерения:</div>
+									<div id="meas_list" style="padding: 10px 0px 20px"></div>
+									<div>
+										<a id="add_meas_link" href="" onclick="add_meas(true); return false;">Добавить измерение</a>
+										<div id="add_meas_files" style="display: none">
+											<form method="POST" action="/cgi-bin/SDM/SDM.pl" target="_blank" enctype="multipart/form-data">
+												<input name="query" value="add_meas" type="hidden"></input>
+												<input name="terminal" id="add_meas_terminal" type="hidden"></input>
+												<input name="patient" id="add_meas_patient" type="hidden"></input>
+												<input name="type" id="add_meas_type" type="hidden"></input>
+												<input name="files" id="add_meas_input" type="file" multiple="multiple" onchange="add_meas_select(this)"></input>
+												<input type="submit" value="Добавить"></input>
+											</form>
+											<iframe name="iframe-upload" src="about:blank" style="display:none"></iframe>
+										</div>
+									</div>
+								</div>
+							</td>
+							<td valign="top">
+								<div id="card_data" style="display: none">
+									<div id="card_meas">
+										<div id="card_meas_abp">
+											<table cellpadding="0" cellspacing="0" width="100%">
+												<tr>
+													<td valign="top">
+														<canvas id="abp_canvas"></canvas>
+														<div id="abp_analyze" style="padding: 10px; display:none">
+															Период:
+															<select id="abp_analyze_period" onchange="update_analysis()">
+																<option value="full">Сутки</option>
+																<option value="day">День</option>
+																<option value="night">Ночь</option>
+															</select>
+															<div id="abp_analyze_table1" style="margin: 15px 0px"></div>
+															<table border="1" cellpadding="5" cellspacing="0">
+																<tr>
+																	<td rowspan="2">&nbsp;</td>
+																	<td colspan="2">Систолическое АД</td>
+																	<td colspan="2">Диастолическое АД</td>
+																</tr>
+																<tr>
+																	<td>Гипертензия</td>
+																	<td>Гипотензия</td>
+																	<td>Гипертензия</td>
+																	<td>Гипотензия</td>
+																</tr>
+																<tr>
+																	<td>Индекс времени</td>
+																	<td id="abp_blood_pressure_load_systolic_hyper"></td>
+																	<td id="abp_blood_pressure_load_systolic_hypo"></td>
+																	<td id="abp_blood_pressure_load_diastolic_hyper"></td>
+																	<td id="abp_blood_pressure_load_diastolic_hypo"></td>
+																</tr>
+																<tr>
+																	<td>Индекс площади</td>
+																	<td id="abp_area_under_curve_systolic_hyper"></td>
+																	<td id="abp_area_under_curve_systolic_hypo"></td>
+																	<td id="abp_area_under_curve_diastolic_hyper"></td>
+																	<td id="abp_area_under_curve_diastolic_hypo"></td>
+																</tr>
+															</table>
+															<div id="abp_analyze_table2" style="margin: 15px 0px"></div>
+														</div>
+														<div id="abp_monitoring" style="margin: 10px; display:none">
+															<table>
+																<tr>
+																	<td>
+																		Условия мониторирования:
+																	</td>
+																	<td>
+																		<select id="abp_monitoring_type">
+																			<option value="0"></option>
+																			<option value="1">Госпиталь</option>
+																			<option value="2">Амбулатория</option>
+																			<option value="3">Типичный рабочий день</option>
+																			<option value="4">Типичный день отдыха</option>
+																			<option value="5">Нетипичный рабочий день</option>
+																			<option value="6">Нетипичный день отдыха</option>
+																		</select>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		Физические нагрузки:
+																	</td>
+																	<td>
+																		<select id="abp_monitoring_physical">
+																			<option value="0"></option>
+																			<option value="1">Средние</option>
+																			<option value="2">Легкие</option>
+																			<option value="3">Отсутствуют</option>
+																		</select>
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		Эмоциональные нагрузки:
+																	</td>
+																	<td>
+																		<select id="abp_monitoring_emo">
+																			<option value="0"></option>
+																			<option value="1">Стрессовая ситуация</option>
+																			<option value="2">Легкое нервное напряжение</option>
+																			<option value="3">Отсутствуют</option>
+																		</select>
+																	</td>
+																</tr>
+															</table>
+														</div>
+														<div id="abp_comment" style="display:none; padding: 10px">
+															<textarea id="abp_monitoring_comment" style="width: 100%; height: 300px;"></textarea>
+														</div>
+													</td>
+													<td valign="top">
+														<div style="border-left: 1px solid gray">
+															<div id="abp_meas_list"></div>
+														</div>
+													</td>
+												</tr>
+											</table>
+										</div>
+										<div id="card_meas_ecg" style="display: none">
+											ЭКГ
+										</div>
+									</div>
+									<div id="card_info" style="display: none; padding: 20px;">
+										card_info
+									</div>
+									<div id="card_diagnosis" style="display: none; padding: 20px;">
+										card_diagnosis
+									</div>
+									<div id="card_monitor" style="display: none; padding: 0px 20px;">
+										<div>
+											<h3>Программирование монитора</h3>
+
+											<table>
+												<tr>
+													<td valign="top">1.</td>
+													<td>
+														Установить параметры мониторирования:
+														<table>
+															<tr>
+																<td width="400">
+																	Время запуска:
+																</td>
+																<td>
+																	<span id="card_monitor_time_start"></span>
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	Время окончания:
+																</td>
+																<td>
+																	<span id="card_monitor_time_end"></span>
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	Время мониторирования:
+																</td>
+																<td>
+																	<select id="card_monitor_duration" onchange="card_monitoring_update()">
+																		<option value="1">1 час</option>
+																		<option value="2">2 часа</option>
+																		<option value="3">3 часа</option>
+																		<option value="4">4 часа</option>
+																		<option value="5">5 часов</option>
+																		<option value="6">6 часов</option>
+																		<option value="7">7 часов</option>
+																		<option value="8">8 часов</option>
+																		<option value="9">9 часов</option>
+																		<option value="10">10 часов</option>
+																		<option value="11">11 часов</option>
+																		<option value="12">12 часов</option>
+																		<option value="13">13 часов</option>
+																		<option value="14">14 часов</option>
+																		<option value="15">15 часов</option>
+																		<option value="16">16 часов</option>
+																		<option value="17">17 часов</option>
+																		<option value="18">18 часов</option>
+																		<option value="19">19 часов</option>
+																		<option value="20">20 часов</option>
+																		<option value="21">21 час</option>
+																		<option value="22">22 часа</option>
+																		<option value="23">23 часа</option>
+																		<option value="24">24 часа</option>
+																	</select>
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	Активный период с <span id="card_monitor_active_start"></span> до <span id="card_monitor_active_end"></span>
+																</td>
+																<td>
+																	<select id="card_monitor_interval_active" name="interval_active" onchange="card_monitoring_update()">
+																		<option value="15">15 минут</option>
+																		<option value="30">30 минут</option>
+																		<option value="45">45 минут</option>
+																		<option value="60">60 минут</option>
+																	</select>
+																	между измерениями
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	Пассивный период с <span id="card_monitor_passive_start"></span> до <span id="card_monitor_passive_end"></span>
+																</td>
+																<td>
+																	<select id="card_monitor_interval_passive" name="interval_passive" onchange="card_monitoring_update()">
+																		<option value="15">15 минут</option>
+																		<option value="30">30 минут</option>
+																		<option value="45">45 минут</option>
+																		<option value="60">60 минут</option>
+																	</select>
+																	между измерениями
+																</td>
+															</tr>
+															<tr>
+																<td>
+																	Индикация результата:
+																</td>
+																<td>
+																	<input type="checkbox" id="card_monitor_indication" name="indication" onchange="card_monitoring_update()"></input>
+																</td>
+															</tr>
+															<!--
+															<div>
+																Нестандартная подкачка: ???????
+															</div>
+															-->
+														</table>
+													</td>
+												</tr>
+												<tr>
+													<td valign="top">2.</td>
+													<td>
+														<a id="card_monitor_plan_download" target="_blank" href="/cgi-bin/plan_.txt">Скачать план мониторирования</a> и сохранить его в C:\plan_.txt
+													</td>
+												</tr>
+												<tr>
+													<td valign="top">3.</td>
+													<td>Запустить программу C:\PROG.exe</td>
+												</tr>
+											</table>
+										</div>
+
+										<br />
+										<br />
+
+										<div>
+											<h3>Загрузка данных из монитора</h3>
+											<table>
+												<tr>
+													<td valign="top">1.</td>
+													<td>Запустить программу C:\READ.exe</td>
+												</tr>
+												<tr>
+													<td valign="bottom">2.</td>
+													<td>
+														Выбрать и загрузить файл C:\res_.txt с результатами мониторирования:
+														<input type="file"></input>
+													</td>
+												</tr>
+												<tr>
+													<td>&nbsp;</td>
+													<td><input type="submit" value="Загрузить"></input></td>
+												</tr>
+											</table>
+										</div>
+									</div>
+								</div>
+								<div id="terminal_info" style="display:none">
+									<!--<a href="" onclick="add_patient(); return false;">Добавить карточку</a>-->
+								</div>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
