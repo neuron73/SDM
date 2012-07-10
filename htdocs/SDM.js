@@ -510,6 +510,10 @@
 					cache[args] = data;
 				}
 			}
+		},
+
+		drop: function(type, args) {
+			this.add(type, args, null);
 		}
 
 	});
@@ -1048,14 +1052,7 @@
 		initialize: function(backend, cgi_bin) {
 			this.backend = backend;
 			this.cgi_bin = cgi_bin;
-			this.onEvent("add_meas", $.F(this, function(add) {
-				$.toggle(!add, "add_meas_link");
-				$.toggle(add, "add_meas_files");
-				$.$("add_meas_terminal").value = this.navigation.get("terminal");
-				$.$("add_meas_patient").value = this.navigation.get("patient");
-				this.add_meas_select($.$("add_meas_input"));
-			}));
-			this.onEvent("add_meas_select", $.F(this, this.add_meas_select));
+			this.onEvent("add_meas_update", $.F(this, this.add_meas_update));
 			this.onEvent("add_meas_callback", $.F(this, function(terminal, patient, status) {
 				if (status) {
 					alert(status);
@@ -1069,11 +1066,10 @@
 					}
 				});
 				this.menus.measurements.update(items);
-				add_meas(false);
 			}));
-			this.onEvent("add_patient", $.F(this, function(terminal) {
+			this.onEvent("add_patient", $.F(this, function() {
 				this.block_main("card_info");
-				this.make_card_info(null, terminal);
+				this.make_card_info(null, this.navigation.get("terminal"));
 			}));
 			this.onEvent("card_monitoring_update", $.F(this, function(terminal) {
 				var duration = Number($.$("card_monitor_duration").value);
@@ -1133,6 +1129,14 @@
 			}));
 		},
 
+		add_meas_update: function() {
+			var a = $.$("add_meas_input").value.split(".");
+			var extension = a[a.length - 1]; // (String(input.value).match(/.*\.(w+)$/) || [])[1]
+			$.$("add_meas_type").value = extension == "txt" ? "АД" : "ЭКГ";
+			$.$("add_meas_terminal").value = this.navigation.get("terminal");
+			$.$("add_meas_patient").value = this.navigation.get("patient");
+		},
+
 		init: function() {
 			this.list_view_enabled = true;
 			this.menus = {};
@@ -1159,12 +1163,6 @@
 				this.navigation.chroot(Number(m[1]));
 			}
 			this.navigation.init();
-		},
-
-		add_meas_select: function(input) {
-			var a = input.value.split(".");
-			var extension = a[a.length - 1]; // (String(input.value).match(/.*\.(w+)$/) || [])[1]
-			$.$("add_meas_type").value = extension == "txt" ? "АД" : "ЭКГ";
 		},
 
 		query: function(query) {
@@ -1530,7 +1528,7 @@
 				}
 				rows.push([$.span(title + ":"), control]);
 			});
-			rows.push(["", $.e("button", {onclick: function() {
+			rows.push(["", $.e("button", {onclick: $.F(this, function() {
 				var request = {query: info ? "edit_patient" : "add_patient", terminal: terminal, patient: patient};
 				$.every(fields, function(field) {
 					var key = "card_info_" + field[1];
@@ -1541,8 +1539,16 @@
 						request[key] = $.$(key).value.split(".").reverse().join("-") + " 00:00:00";
 				});
 				var resp = this.post(request);
-				alert(resp);
-			}}, info ? "Сохранить" : "Добавить")]);
+				// alert(resp);
+				var id = Number(resp);
+				if (id > 0) {
+					this.cache.drop("patient", [terminal]);
+					this.navigation.open({type: "terminal", id: terminal});
+					alert("Карточка создана");
+				} else {
+					alert("Ошибка при создании карточки");
+				}
+			})}, info ? "Сохранить" : "Добавить")]);
 			container.appendChild($.table.apply($, rows));
 			// console.log(info);
 		},

@@ -165,8 +165,6 @@
 				window.UI = new SDM.Interface("/cgi-bin/SDM/SDM.pl", "/cgi-bin/");
 
 				window.onresize = 		$.F(UI, UI.event, ["resize"]);
-				window.add_meas = 		$.F(UI, UI.event, ["add_meas"]);
-				window.add_meas_select = 	$.F(UI, UI.event, ["add_meas_select"]);
 				window.add_meas_callback = 	$.F(UI, UI.event, ["add_meas_callback"]);
 				window.add_patient = 		$.F(UI, UI.event, ["add_patient"]);
 				window.card_monitoring_update =	$.F(UI, UI.event, ["card_monitoring_update"]);
@@ -210,18 +208,7 @@
 									<div>Измерения:</div>
 									<div id="meas_list" style="padding: 10px 0px 20px"></div>
 									<div>
-										<a id="add_meas_link" href="" onclick="add_meas(true); return false;">Добавить измерение</a>
-										<div id="add_meas_files" style="display: none">
-											<form method="POST" action="/cgi-bin/SDM/SDM.pl" target="_blank" enctype="multipart/form-data">
-												<input name="query" value="add_meas" type="hidden"></input>
-												<input name="terminal" id="add_meas_terminal" type="hidden"></input>
-												<input name="patient" id="add_meas_patient" type="hidden"></input>
-												<input name="type" id="add_meas_type" type="hidden"></input>
-												<input name="files" id="add_meas_input" type="file" multiple="multiple" onchange="add_meas_select(this)"></input>
-												<input type="submit" value="Добавить"></input>
-											</form>
-											<iframe name="iframe-upload" src="about:blank" style="display:none"></iframe>
-										</div>
+										<!--<a id="add_meas_link" href="" onclick="add_meas(true); return false;">Добавить измерение</a>-->
 									</div>
 								</div>
 							</td>
@@ -449,7 +436,7 @@
 												</tr>
 												<tr>
 													<td valign="top">3.</td>
-													<td>Запустить программу C:\PROG.exe</td>
+													<td>Запустить программу C:\SDM_COM.exe</td>
 												</tr>
 											</table>
 										</div>
@@ -459,23 +446,31 @@
 
 										<div>
 											<h3>Загрузка данных из монитора</h3>
-											<table>
-												<tr>
-													<td valign="top">1.</td>
-													<td>Запустить программу C:\READ.exe</td>
-												</tr>
-												<tr>
-													<td valign="bottom">2.</td>
-													<td>
-														Выбрать и загрузить файл C:\res_.txt с результатами мониторирования:
-														<input type="file"></input>
-													</td>
-												</tr>
-												<tr>
-													<td>&nbsp;</td>
-													<td><input type="submit" value="Загрузить"></input></td>
-												</tr>
-											</table>
+											<form method="POST" action="/cgi-bin/SDM/SDM.pl" target="_blank" enctype="multipart/form-data">
+												<input name="query" value="add_meas" type="hidden"></input>
+												<input name="terminal" id="add_meas_terminal" type="hidden"></input>
+												<input name="patient" id="add_meas_patient" type="hidden"></input>
+												<input name="type" id="add_meas_type" type="hidden"></input>
+												<table>
+													<tr>
+														<td valign="top">1.</td>
+														<td>Запустить программу C:\SDM_READ.exe</td>
+													</tr>
+													<tr>
+														<td valign="bottom">2.</td>
+														<td>
+															Выбрать и загрузить файл C:\res_.txt с результатами мониторирования:
+															<input name="files" id="add_meas_input" type="file" multiple="multiple" onchange="UI.event('add_meas_update')"></input>
+														</td>
+													</tr>
+													<tr>
+														<td>&nbsp;</td>
+														<td>
+															<input type="submit" onclick="UI.event('add_meas_update')" value="Загрузить"></input>
+														</td>
+													</tr>
+												</table>
+											</form>
 										</div>
 									</div>
 								</div>

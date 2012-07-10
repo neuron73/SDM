@@ -215,7 +215,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 		}
 
 		# TODO: date_monit, number_monitor, time_monit
-		my $time = strftime "%Y-%m-%e %H:%M:%S", localtime;
+		my $time = strftime "%Y-%m-%d %H:%M:%S", localtime;
 		$sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
 		$sth->execute();
 
@@ -385,7 +385,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 	# print "insert into $TABLE->{patients} (" . join(",", @keys) . ") VALUES (" . join(",", @values) . ")";
 	$sth = $dbh->prepare("insert into $TABLE->{patients} (" . join(",", @keys) . ") VALUES (" . join(",", @values) . ")");
-	print $sth->execute() ? 1 : 0;
+	print $sth->execute() ? $data->{n_kart} : 0;
 
 } elsif ($query eq "auth") {
 	
