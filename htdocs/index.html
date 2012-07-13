@@ -333,7 +333,19 @@
 												<tr>
 													<td valign="top">1.</td>
 													<td>
-														Установить параметры мониторирования:
+														Подключите монитор к компьютеру
+													</td>
+												</tr>
+												<tr>
+													<td valign="top">2.</td>
+													<td>
+														Запустите диспетчер мониторирования
+													</td>
+												</tr>
+												<tr>
+													<td valign="top">3.</td>
+													<td>
+														Установите параметры мониторирования:
 														<table>
 															<tr>
 																<td width="400">
@@ -417,7 +429,7 @@
 																	Индикация результата:
 																</td>
 																<td>
-																	<input type="checkbox" id="card_monitor_indication" name="indication" onchange="card_monitoring_update()"></input>
+																	<input type="checkbox" id="card_monitor_indication" name="indication" checked="checked" onchange="card_monitoring_update()"></input>
 																</td>
 															</tr>
 															<!--
@@ -428,6 +440,7 @@
 														</table>
 													</td>
 												</tr>
+<!--
 												<tr>
 													<td valign="top">2.</td>
 													<td>
@@ -438,6 +451,13 @@
 													<td valign="top">3.</td>
 													<td>Запустить программу C:\SDM_COM.exe</td>
 												</tr>
+-->
+												<tr>
+													<td>4.</td>
+													<td>
+														<button onclick="window.UI.monitor_prog()">Программировать</button>
+													</td>
+												</tr>
 											</table>
 										</div>
 
@@ -446,12 +466,27 @@
 
 										<div>
 											<h3>Загрузка данных из монитора</h3>
+											<!--
 											<form method="POST" action="/cgi-bin/SDM/SDM.pl" target="_blank" enctype="multipart/form-data">
 												<input name="query" value="add_meas" type="hidden"></input>
 												<input name="terminal" id="add_meas_terminal" type="hidden"></input>
 												<input name="patient" id="add_meas_patient" type="hidden"></input>
 												<input name="type" id="add_meas_type" type="hidden"></input>
+											-->
 												<table>
+													<tr>
+														<td valign="top">1.</td>
+														<td>
+															Подключите монитор к компьютеру
+														</td>
+													</tr>
+													<tr>
+														<td valign="top">2.</td>
+														<td>
+															Запустите диспетчер мониторирования
+														</td>
+													</tr>
+													<!--
 													<tr>
 														<td valign="top">1.</td>
 														<td>Запустить программу C:\SDM_READ.exe</td>
@@ -463,15 +498,21 @@
 															<input name="files" id="add_meas_input" type="file" multiple="multiple" onchange="UI.event('add_meas_update')"></input>
 														</td>
 													</tr>
+													-->
 													<tr>
-														<td>&nbsp;</td>
+														<td>3.</td>
 														<td>
-															<input type="submit" onclick="UI.event('add_meas_update')" value="Загрузить"></input>
+															<!--<input type="submit" onclick="UI.event('add_meas_update')" value="Загрузить"></input>-->
+															<button onclick="window.UI.monitor_read()">Загрузить данные</button>
 														</td>
 													</tr>
 												</table>
+											<!--
 											</form>
+											-->
 										</div>
+
+										<div id="monitor-container"></div>
 									</div>
 								</div>
 								<div id="terminal_info" style="display:none">

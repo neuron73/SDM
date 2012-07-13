@@ -52,6 +52,55 @@ sub error {
 	print JSON->new->encode({error => $error || 1});
 	exit;
 }
+
+sub import_result {
+	my ($data, $n_terminal, $n_patient, $n_meas, $type) = @_;
+	my @s = split /\r?\n/, $data;
+	my $n_points = $s[8];
+
+	my @timeval;
+	my @number;
+	my @rate;
+	my @systolic;
+	my @diastolic;
+
+	my $time_start = "$s[11]:$s[10]";
+	push @timeval, $time_start;
+
+	for (my $i = 0; $i < $n_points - 1; $i++) {
+		my $minute = $s[15 + $i * 2];
+		my $hours = $s[16 + $i * 2];
+		push @timeval, "$hours:$minute";
+	}
+	for (my $i = 0; $i < $n_points; $i++) {
+		push @number, $s[269 + $i * 5];		# номер измерения
+		push @rate, $s[270 + $i * 5];		# пульс
+		push @systolic, $s[271 + $i * 5];	# систола
+		push @diastolic, $s[272 + $i * 5];	# диастола
+		my $flags = $s[273 + $i * 5];		# флаги
+	}
+	my $sth;
+	for (my $i = 0; $i < $n_points; $i++) {
+		$sth = $dbh->prepare("insert into $TABLE->{measurements} (n_terminal, n_kart, n_meas, p_off, p_sp, p_dp, p_fp, p_fl_a, p_date, p_time, p_fl_err, p_fl_rst) values ($n_terminal, $n_patient, $n_meas, 0, $systolic[$i], $diastolic[$i], $rate[$i], '', '', '$timeval[$i]', '', '')");
+		$sth->execute();
+	}
+
+	if ($n_points > 0) {
+		my $time = strftime "%Y-%m-%d %H:%M:%S", localtime;
+		$sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
+		$sth->execute();
+	}
+}
+
+sub max_meas {
+	my ($n_terminal, $n_patient) = @_;
+	my $sth = $dbh->prepare("select max(n_meas) from $TABLE->{sessions} where n_terminal = $n_terminal and n_kart = $n_patient");
+
+	$sth->execute();
+	my @rows = $sth->fetchrow_array();
+	return @rows ? $rows[0] + 1 : 0;
+}
+
 sub send_mail {
 	my ($email, $id, $password) = @_;
 
@@ -108,11 +157,8 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $type = $q->param("type");
 	my $status;
 	if ($type =~ /^[\wА-Я]+$/) {
-		my $sth = $dbh->prepare("select max(n_meas) from $TABLE->{sessions} where n_terminal = $n_terminal and n_kart = $n_patient");
+		my $n_meas = max_meas($n_terminal, $n_patient);
 
-		$sth->execute();
-		my @rows = $sth->fetchrow_array();
-		my $n_meas = @rows ? $rows[0] + 1 : 0;
 		my @files = $q->param("files");
 		foreach my $fh (@files) {
 			my $ext;
@@ -170,45 +216,8 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 			} elsif ($ext eq "txt") { # res_.txt
 				my $data = "";
 				$data .= $_ while <$fh>;
-				my @s = split /\r?\n/, $data;
-				my $n_points = $s[8];
-=pod
-				$dt = DateTime->new(
-					year       => 2000 + $s[14],
-					month      => $s[13],
-					day        => $s[12],
-					hour       => $s[11],
-					minute     => $s[10],
-					second     => 0
-				);
-				$time_start = time(0, $s[10], $s[11], $s[12], $s[13], $s[14]);
-=cut
-				my @timeval;
-				my @number;
-				my @rate;
-				my @systolic;
-				my @diastolic;
-
-				my $time_start = "$s[11]:$s[10]";
-				push @timeval, $time_start;
-
-				for (my $i = 0; $i < $n_points - 1; $i++) {
-					my $minute = $s[15 + $i * 2];
-					my $hours = $s[16 + $i * 2];
-					push @timeval, "$hours:$minute";
-				}
-				for (my $i = 0; $i < $n_points; $i++) {
-					push @number, $s[269 + $i * 5];		# номер измерения
-					push @rate, $s[270 + $i * 5];		# пульс
-					push @systolic, $s[271 + $i * 5];	# систола
-					push @diastolic, $s[272 + $i * 5];	# диастола
-					my $flags = $s[273 + $i * 5];		# флаги
-				}
-				for (my $i = 0; $i < $n_points; $i++) {
-					$sth = $dbh->prepare("insert into $TABLE->{measurements} (n_terminal, n_kart, n_meas, p_off, p_sp, p_dp, p_fp, p_fl_a, p_date, p_time, p_fl_err, p_fl_rst) values ($n_terminal, $n_patient, $n_meas, 0, $systolic[$i], $diastolic[$i], $rate[$i], '', '', '$timeval[$i]', '', '')");
-					$sth->execute();
-				}
-				$status = "Error: Bad Result" if $n_points < 3;
+				# my $n_points = import_result($data, $n_terminal, $n_patient, $n_meas);
+				# $status = "Error: Bad Result" if $n_points < 3;
 			} else {
 				$status = "Error: Bad File";
 			}
@@ -216,7 +225,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 		# TODO: date_monit, number_monitor, time_monit
 		my $time = strftime "%Y-%m-%d %H:%M:%S", localtime;
-		$sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
+		my $sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
 		$sth->execute();
 
 		print "<html><head><script> window.opener.add_meas_callback($n_terminal, $n_patient, '$status'); window.close(); </script></head></html>";
@@ -262,6 +271,17 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	}
 	print "Content-Type: text/plain;\n\n" . join("\r\n", @plan) . "\r\n";
 	exit(0);
+} elsif ($query eq "import_result") {
+	print $header;
+	my $res = $q->param("result");
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $type = $q->param("type");
+
+	my $n_meas = max_meas($n_terminal, $n_patient);
+	import_result($res, $n_terminal, $n_patient, $n_meas, $type);
+	$result = {status => "ok"};
+
 } elsif ($query eq "terminals") {
 	print $header;
 

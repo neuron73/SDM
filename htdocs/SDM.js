@@ -1075,7 +1075,7 @@
 				var duration = Number($.$("card_monitor_duration").value);
 				var start = Math.floor(new Date() / 1000) + 5 * 60;
 				var end = start + duration * 60 * 60;
-				var plan = {
+				this.plan = {
 					indication: $.$("card_monitor_indication").checked ? 1 : 0,
 					interval_active: $.$("card_monitor_interval_active").value,
 					interval_passive: $.$("card_monitor_interval_passive").value,
@@ -1085,11 +1085,13 @@
 					night_end: NIGHT_TIME_END,
 					special: SPECIAL_TIME_START
 				};
+				/*
 				var keys = ["query=plan"];
-				for (var k in plan) {
-					keys.push(k + "=" + plan[k]);
+				for (var k in this.plan) {
+					keys.push(k + "=" + this.plan[k]);
 				}
 				$.$("card_monitor_plan_download").href = this.cgi_bin + "plan_.txt?" + keys.join("&");
+				*/
 
 				var xx = function(n) {
 					return n < 10 ? "0" + n : n;
@@ -1098,8 +1100,8 @@
 					date = new Date(date * 1000);
 					return xx(date.getDate()) + "." + xx(date.getMonth() + 1) + "." + (date.getYear() + 1900) + " " + xx(date.getHours()) + ":" + xx(date.getMinutes());
 				};
-				$.$("card_monitor_time_start").innerHTML = format(plan.start);
-				$.$("card_monitor_time_end").innerHTML = format(plan.end);
+				$.$("card_monitor_time_start").innerHTML = format(this.plan.start);
+				$.$("card_monitor_time_end").innerHTML = format(this.plan.end);
 
 				$.$("card_monitor_active_start").innerHTML = NIGHT_TIME_END + ":00";
 				$.$("card_monitor_active_end").innerHTML = NIGHT_TIME_START + ":00";
@@ -1127,6 +1129,13 @@
 					$.style(this.ecg_iframe, {width: size.width - 300, height: size.height - 70});
 				}
 			}));
+
+			this.monitor_dispatcher_URL = "http://localhost:18345/";
+
+			if (window.addEventListener)
+				window.addEventListener("message", $.F(this, this.monitor_listener), false);
+			else
+				window.attachEvent("onmessage", $.F(this, this.monitor_listener));
 		},
 
 		add_meas_update: function() {
@@ -1189,6 +1198,48 @@
 			xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 			xhr.send(a.join("&"));
 			return $.json.decode(xhr.responseText);
+		},
+
+		make_plan: function() {
+			var date_start = Number(this.plan.start);
+			var date_end = Number(this.plan.end);
+			var night_time_start = Number(this.plan.night_start);
+			var night_time_end = Number(this.plan.night_end);
+			var special_time = Number(this.plan.special);
+
+			var plan = [];
+			plan[0] = "USB";
+			// ФЛАГ ВЫВОДА РЕЗУЛЬТАТОВ НА ИНДИКАЦИЮ ВО ВРЕМЯ МОНИТОРИНГА
+			plan[1] = this.plan.indication;
+			// КОД ОПЦИЙ РЕАКЦИЙ МОНИТОРА НА ОШИБКИ: всегда константа 3.
+			plan[2] = 3;
+			// СТАРТОВОЕ ЗНАЧЕНИЕ ПОРОГА НАГНЕТАНИЯ ДАВЛЕНИЯ В ММ РТ.СТ.: 0, 100 ... 290. (Если 0, то монитор использует стандартное значение.)
+			plan[3] = 0;
+			// ШАГ ПОДКАЧКИ ДАВЛЕНИЯ В ММ РТ.СТ.:	0, 20 ... 60. (Если 0, то монитор использует стандартное значение.)
+			plan[4] = 0;
+			// ПРЕДЕЛЬНОЕ ЗНАЧЕНИЕ ПОДКАЧКИ ДАВЛЕНИЯ В ММ РТ.СТ.: 0, 20 ... 195. (Если 0, то монитор использует стандартное значение.)
+			plan[5] = 0;
+			// МЛАДШИЙ БАЙТ ВРЕМЕНИ НАЧАЛА АКТИВНОГО ПЕРИОДА В МИНУТАХ С НАЧАЛА СУТОК: 0 ... 255
+			plan[6] = (night_time_end * 60) & 0xFF;
+			// СТАРШИЙ БАЙТ ВРЕМЕНИ НАЧАЛА АКТИВНОГО ПЕРИОДА В МИНУТАХ С НАЧАЛА СУТОК: 0 ... 5.
+			plan[7] = (night_time_end * 60) >> 8;
+			// МЛАДШИЙ БАЙТ ВРЕМЕНИ ОКОНЧАНИЯ АКТИВНОГО ПЕРИОДА В МИНУТАХ С НАЧАЛА СУТОК: 0 ... 255.
+			plan[8] = (night_time_start * 60) & 0xFF;
+			// СТАРШИЙ БАЙТ ВРЕМЕНИ ОКОНЧАНИЯ АКТИВНОГО ПЕРИОДА В МИНУТАХ С НАЧАЛА СУТОК: 0 ... 5.
+			plan[9] = (night_time_start * 60) >> 8;
+			var n = 0;
+			var date;
+			while (date_start <= date_end) {
+				date = new Date(date_start * 1000);
+				// МИНУТЫ ВРЕМЕНИ ЗАПУСКА ИЗМЕРЕНИЯ НА ТОЧКЕ i: 0 ... 59.
+				plan[10 + n * 2] = date.getMinutes();
+				// ЧАСЫ ВРЕМЕНИ ЗАПУСКА ИЗМЕРЕНИЯ НА ТОЧКЕ i: 0 ... 23.
+				plan[11 + n * 2] = date.getHours();
+				var interval = (date.getHours() >= special_time && date.getHours() < night_time_start) ? Number(this.plan.interval_active) : Number(this.plan.interval_passive);
+				date_start += interval * 60;
+				n++;
+			}
+			return plan.join("-");
 		},
 
 		show_terminals: function() {
@@ -1614,6 +1665,55 @@
 			$.toggle(block == "card_diagnosis", "card_diagnosis");
 			$.toggle(block == "card_monitor", "card_monitor");
 			$.toggle(block == "terminal", "terminal_info");
+		},
+
+		monitor_read: function() {
+			if (confirm("Нажмите кнопку 'Событие'. Продолжить чтение данных?")) {
+				this.monitor_mode = "read";
+				var self = this;
+				var iframe = $.e("iframe", {src: this.monitor_dispatcher_URL + "#read", style: {display: "none"}});
+				$.$("monitor-container").appendChild(iframe);
+				iframe.onload = function() {
+					iframe.contentWindow.postMessage(window.location.href, self.monitor_dispatcher_URL);
+				}
+			}
+		},
+
+		monitor_prog: function() {
+			if (confirm("Нажмите кнопку 'Событие'. Продолжить программирование?")) {
+				this.monitor_mode = "prog";
+				var plan = this.make_plan();
+				var input = $.e("input", {type: "hidden", name: "plan", value: plan});
+				var form = $.e("form", {action: this.monitor_dispatcher_URL, method: "POST", target: "_blank"}, [input]);
+				$.$("monitor-container").appendChild(form);
+				form.submit();
+			}
+		},
+
+		submit_monitoring: function(data) {
+			var response = window.UI.post({
+				query: "import_result",
+				result : data,
+				terminal: window.UI.navigation.get("terminal"),
+				patient: window.UI.navigation.get("patient"),
+				type: "АД"
+			});
+			window.UI.event("add_meas_callback");
+			alert(response.status == "ok" ? "Загрузка данных завершена" : "Ошибка записи данных");
+		},
+
+		monitor_listener: function(event) {
+			if (this.monitor_mode == "read") {
+				if (event.data == "error")
+					alert("Ошибка чтения данных");
+				else
+					this.submit_monitoring(event.data);
+			} else {
+				if (event.data == "error")
+					alert("Ошибка при программировании монитора!");
+				else
+					alert("Программирование завершено");
+			}
 		}
 
 	});
