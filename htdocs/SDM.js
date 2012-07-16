@@ -1682,11 +1682,18 @@
 		monitor_prog: function() {
 			if (confirm("Нажмите кнопку 'Событие'. Продолжить программирование?")) {
 				this.monitor_mode = "prog";
+				var self = this;
+				var container = "monitor-prog";
+				var iframe = $.e("iframe", {src: "about:blank", name: container, style: {display: "none"}});
+				$.$("monitor-container").appendChild(iframe);
 				var plan = this.make_plan();
 				var input = $.e("input", {type: "hidden", name: "plan", value: plan});
-				var form = $.e("form", {action: this.monitor_dispatcher_URL, method: "POST", target: "_blank"}, [input]);
+				var form = $.e("form", {action: this.monitor_dispatcher_URL, method: "POST", target: container}, [input]);
 				$.$("monitor-container").appendChild(form);
 				form.submit();
+				iframe.onload = function() {
+					iframe.contentWindow.postMessage(window.location.href, self.monitor_dispatcher_URL);
+				};
 			}
 		},
 
