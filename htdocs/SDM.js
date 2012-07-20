@@ -1182,9 +1182,13 @@
 				a.push(k + "=" + query[k]);
 			}
 			xhr.open("GET", this.backend + "?" + a.join("&"), false);
-			xhr.overrideMimeType('text/plain; charset=x-user-defined');
+			if (xhr.overrideMimeType)
+				xhr.overrideMimeType('text/plain; charset=x-user-defined');
 			xhr.send("");
-			return $.json.decode($.OxFF(xhr.responseText));
+
+			// IE 9
+			var r = xhr.overrideMimeType ? xhr.responseText : $.map(function(_) { return String.fromCharCode(_) }, VBArray(xhr.responseBody).toArray()).join("");
+			return $.json.decode($.OxFF(r));
 		},
 
 		post: function(query) {
@@ -1239,7 +1243,7 @@
 				date_start += interval * 60;
 				n++;
 			}
-			return plan.join("-");
+			return plan.join("-") + "-";
 		},
 
 		show_terminals: function() {
