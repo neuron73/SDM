@@ -171,6 +171,9 @@
 				window.update_analysis = 	$.F(UI, UI.event, ["update_analysis"]);
 
 				window.onload = function() {
+					$.every($.$$(".dispatcher"), function(a) {
+						a.href = "monitor.exe?t=" + $.now();
+					});
 					window.UI.init();
 				}
 			})();
@@ -339,7 +342,7 @@
 												<tr>
 													<td valign="top">2.</td>
 													<td>
-														Запустите <a href="monitor.exe">диспетчер мониторирования</a>
+														Запустите <a class="dispatcher" href="">диспетчер мониторирования</a>
 													</td>
 												</tr>
 												<tr>
@@ -483,7 +486,7 @@
 													<tr>
 														<td valign="top">2.</td>
 														<td>
-															Запустите <a href="monitor.exe">диспетчер мониторирования</a>
+															Запустите <a class="dispatcher" href="">диспетчер мониторирования</a>
 														</td>
 													</tr>
 													<!--

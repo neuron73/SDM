@@ -90,6 +90,7 @@ sub import_result {
 		$sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
 		$sth->execute();
 	}
+	return $n_points;
 }
 
 sub max_meas {
@@ -216,8 +217,10 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 			} elsif ($ext eq "txt") { # res_.txt
 				my $data = "";
 				$data .= $_ while <$fh>;
-				# my $n_points = import_result($data, $n_terminal, $n_patient, $n_meas);
-				# $status = "Error: Bad Result" if $n_points < 3;
+				my $n_points = import_result($data, $n_terminal, $n_patient, $n_meas, $type);
+				$status = "Error: Bad Result" if $n_points < 3;
+				print "<html><head><script> window.opener.add_meas_callback($n_terminal, $n_patient, '$status'); window.close(); </script></head></html>";
+				exit(0);
 			} else {
 				$status = "Error: Bad File";
 			}
