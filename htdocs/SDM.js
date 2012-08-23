@@ -1128,6 +1128,9 @@
 				if (this.ecg_iframe != null) {
 					$.style(this.ecg_iframe, {width: size.width - 300, height: size.height - 70});
 				}
+				if (this.abp_iframe != null) {
+					$.style(this.abp_iframe, {width: size.width - 340, height: size.height - 60});
+				}
 			}));
 
 			this.monitor_dispatcher_URL = "http://localhost:18345/";
@@ -1329,7 +1332,8 @@
 					card_menu.update([
 						["Карточка", "info"],
 						["Диагноз", "diagnosis"],
-						["Мониторирование", "monitor"]
+						["Мониторирование", "monitor"],
+						["Пробный замер", "test"]
 					]);
 
 					var measlist = this.cache.get("meas", [path.terminal, path.patient]);
@@ -1481,6 +1485,7 @@
 					}
 					$.toggle(meas.type == "АД", "card_meas_abp");
 					$.toggle(meas.type == "ЭКГ", "card_meas_ecg");
+					$.toggle(meas.type == "ИАД", "card_meas_abpm");
 					if (meas.type == "ЭКГ") {
 						var container = $.clear("card_meas_ecg");
 						this.ecg_iframe = $.e("iframe", {
@@ -1492,11 +1497,17 @@
 						this.analysis.load(measdata);
 						this.analysis.drawList($.$("abp_meas_list"));
 						this.analysis.draw();
+					} else if (meas.type == "ИАД") {
+						this.abp_iframe = $.e("iframe", {
+							src: "/ABP/#meas:" + meas.terminal + "-" + meas.patient + "-" + meas.id,
+							style: {width: "100%", height: "100%", border: 0}
+						});
+						$.inject($.clear("card_meas_abpm"), this.abp_iframe);
 					}
 					this.event("resize");
 				} else {
 					this.analysis.clear();
-					$.hide("card_meas_abp", "card_meas_ecg");
+					$.hide("card_meas_abp", "card_meas_ecg", "card_meas_abpm");
 				}
 			} catch(e) {
 				$.error("open meas error: %e", e);
@@ -1509,12 +1520,12 @@
 				["Имя", "name"],
 				["Отчество", "surname"],
 				["Дата рождения(дд.мм.гггг)", "burthday", "date"],
-				["Пол", "sex", "select", [["МУЖ", "мужской"], ["ЖЕН", "женский"]]],
+				["Пол", "sex", "select", [["", ""], ["МУЖ", "мужской"], ["ЖЕН", "женский"]]],
 				["Рост", "rost", "numeric"],
 				["Вес", "ves", "numeric"],
 				["Окружность бедер", "bedro", "numeric"],
 				["Окружность талии", "talia", "numeric"],
-				["Семейное положение", "marital_status", "select", [["ЖЕНАТ", "женат / замужем"], ["ХОЛОСТ",  "не женат / не замужем"]]],
+				["Семейное положение", "marital_status", "select", [["", ""], ["ЖЕНАТ", "женат / замужем"], ["ХОЛОСТ",  "не женат / не замужем"]]],
 				["Социальная категория", "social_status", "select", [["0", ""], ["1", "обычная"], ["2", "инвалид ВОВ"], ["3", "участник ВОВ"], ["4", "воин интернационалист"], ["5", "инвалид"]]],
 				["Образование", "education"],
 				["Место работы", "employment"],
@@ -1654,6 +1665,13 @@
 					container.appendChild($.table.apply($, rows));
 				} else if (item && item.id == "monitor") {
 					card_monitoring_update();
+				} else if (item && item.id == "test") {
+					this.abp_iframe = $.e("iframe", {
+						src: "/ABP/#test",
+						style: {width: "100%", height: "100%", border: 0}
+					});
+					$.inject($.clear("card_test"), this.abp_iframe);
+					this.event("resize");
 				}
 				this.block_main(item == null ? "card_meas" : "card_" + item.id);
 			} catch(e) {
@@ -1668,6 +1686,7 @@
 			$.toggle(block == "card_info", "card_info");
 			$.toggle(block == "card_diagnosis", "card_diagnosis");
 			$.toggle(block == "card_monitor", "card_monitor");
+			$.toggle(block == "card_test", "card_test");
 			$.toggle(block == "terminal", "terminal_info");
 		},
 

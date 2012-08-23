@@ -53,7 +53,16 @@ sub error {
 	exit;
 }
 
-sub import_result {
+# импорт измерения АД
+sub import_result_abp_meas {
+	my ($data, $n_terminal, $n_patient, $n_meas, $type) = @_;
+	my $time = strftime "%Y-%m-%d %H:%M:%S", localtime;
+	my $sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
+	$sth->execute();
+}
+
+# импорт результата мониторирования
+sub import_result_abp {
 	my ($data, $n_terminal, $n_patient, $n_meas, $type) = @_;
 	my @s = split /\r?\n/, $data;
 	my $n_points = $s[8];
@@ -217,7 +226,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 			} elsif ($ext eq "txt") { # res_.txt
 				my $data = "";
 				$data .= $_ while <$fh>;
-				my $n_points = import_result($data, $n_terminal, $n_patient, $n_meas, $type);
+				my $n_points = import_result_abp($data, $n_terminal, $n_patient, $n_meas, $type);
 				$status = "Error: Bad Result" if $n_points < 3;
 				print "<html><head><script> window.opener.add_meas_callback($n_terminal, $n_patient, '$status'); window.close(); </script></head></html>";
 				exit(0);
@@ -282,8 +291,12 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $type = $q->param("type");
 
 	my $n_meas = max_meas($n_terminal, $n_patient);
-	import_result($res, $n_terminal, $n_patient, $n_meas, $type);
-	$result = {status => "ok"};
+	if ($type eq "АД") {
+		import_result_abp($res, $n_terminal, $n_patient, $n_meas, $type);
+	} elsif ($type eq "ИАД") {
+		import_result_abp_meas($res, $n_terminal, $n_patient, $n_meas, $type);
+	}
+	$result = {status => "ok", n => $n_meas};
 
 } elsif ($query eq "terminals") {
 	print $header;

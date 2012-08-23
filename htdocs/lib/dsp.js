@@ -2,7 +2,9 @@
 
 	var $ = require("utils");
 
-	var Filter = new $.Class({
+	var DSP = {};
+
+	DSP.Filter = new $.Class({
 
 		// octave:
 		// f = [0, 0.05, 0.05, 0.3, 0.3, 1]
@@ -41,7 +43,7 @@
 
 	});
 
-	var LowpassFilter = new $.Class({
+	DSP.LowpassFilter = new $.Class({
 
 		// dt - time interval (1 / frequency)
 		// RC - time constant
@@ -120,7 +122,7 @@
 	});
 	*/
 
-	var Average = new $.Class({
+	DSP.Average = new $.Class({
 
 		initialize: function(n) {
 			this.n = n;
@@ -143,7 +145,7 @@
 
 	});
 
-	exports.gaussian_elimination = function(equations) {
+	DSP.gaussian_elimination = function(equations) {
 		var result = [];
 		var matrix = [];
 		var size = equations.length;
@@ -175,7 +177,7 @@
 		return result;
 	};
 
-	exports.least_squares_approximation = function(X, Y, k) {
+	DSP.least_squares_approximation = function(X, Y, k) {
 		var n = X.length;
 
 		var sum_x = [n];
@@ -203,11 +205,11 @@
 			matrix[i][k + 1] = sum_xy[i];
 		}
 
-		return exports.gaussian_elimination(matrix);
+		return DSP.gaussian_elimination(matrix);
 	};
 
 	// ???
-	exports.minmax = function(signal, from, to) {
+	DSP.minmax = function(signal, from, to) {
 		var min, max;
 		from = from || 0;
 		to = to || signal.length;
@@ -220,7 +222,7 @@
 		return [min, max];
 	};
 
-	exports.min = function(signal, from, to) {
+	DSP.min = function(signal, from, to) {
 		var min, n;
 		for (var i = from; i < to; i++) {
 			if (min == null || signal[i] < min) {
@@ -231,7 +233,7 @@
 		return n;
 	};
 
-	exports.max = function(signal, from, to) {
+	DSP.max = function(signal, from, to) {
 		var max, n;
 		for (var i = from; i < to; i++) {
 			if (max == null || signal[i] > max) {
@@ -242,7 +244,7 @@
 		return n;
 	};
 
-	exports.sig_derivative = function(sig_in) {
+	DSP.sig_derivative = function(sig_in) {
 		var sig_out = [0];
 		for (var i = 1; i < sig_in.length; i++) {
 			sig_out[i] = sig_in[i] - sig_in[i - 1];
@@ -250,7 +252,7 @@
 		return sig_out;
 	};
 
-	exports.amplify = function(sig_in, K) {
+	DSP.amplify = function(sig_in, K) {
 		var sig_out = [];
 		for (var i = 1; i < sig_in.length; i++) {
 			sig_out[i] = sig_in[i] * K;
@@ -258,7 +260,7 @@
 		return sig_out;
 	};
 
-	exports.diff = function(signal1, signal2) {
+	DSP.diff = function(signal1, signal2) {
 		var out = [];
 		for (var i = 0; i < signal1.length; i++) {
 			out[i] = signal1[i] - signal2[i];
@@ -267,7 +269,7 @@
 	};
 
 	// sig_in = [0, 1]
-	exports.bin = {
+	DSP.bin = {
 
 		median_filter: function(sig_in, radius) {
 			var sig_out = [];
@@ -305,9 +307,8 @@
 
 	};
 
-	exports.Filter = Filter;
-	exports.LowpassFilter = LowpassFilter;
-	// exports.MinMaxStream = MinMaxStream;
-	exports.Average = Average;
+	for (var k in DSP) {
+		exports[k] = DSP[k];
+	}
 
 })();

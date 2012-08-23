@@ -170,6 +170,20 @@
 				window.card_monitoring_update =	$.F(UI, UI.event, ["card_monitoring_update"]);
 				window.update_analysis = 	$.F(UI, UI.event, ["update_analysis"]);
 
+				window.add_abp_measurement = function() {
+					var terminal = window.UI.navigation.get("terminal");
+					var patient = window.UI.navigation.get("patient");
+					var response = window.UI.post({
+						query: "import_result",
+						// result : data,
+						terminal: terminal,
+						patient: patient,
+						type: "ИАД"
+					});
+					window.UI.event("add_meas_callback");
+					return terminal + "-" + patient + "-" + response.n;
+				}
+
 				window.onload = function() {
 					$.every($.$$(".dispatcher"), function(a) {
 						a.href = "monitor.exe?t=" + $.now();
@@ -320,6 +334,9 @@
 										</div>
 										<div id="card_meas_ecg" style="display: none">
 											ЭКГ
+										</div>
+										<div id="card_meas_abpm" style="display: none">
+											ИАД
 										</div>
 									</div>
 									<div id="card_info" style="display: none; padding: 20px;">
@@ -516,6 +533,9 @@
 										</div>
 
 										<div id="monitor-container"></div>
+									</div>
+									<div id="card_test" style="display: none;">
+										Пробный замер
 									</div>
 								</div>
 								<div id="terminal_info" style="display:none">
