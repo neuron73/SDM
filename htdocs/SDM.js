@@ -250,7 +250,7 @@
 			var bold = function(s) {
 				return $.e("span", {style: {fontWeight: "bold"}}, s);
 			}
-			var rows = [[bold("САД"), bold("ДАД"), bold("ЧСС"), bold("Время"), bold("Ошибка")]];
+			var rows = [[bold(loc.sys_abp), bold(loc.dia_abp), bold(loc.rate), bold(loc.time), bold(loc.error)]];
 			for (var i = 0; i < this.root.count; i++) {
 				var error, sys, dia, pulse;
 				if (this.root.errors[i] != null) {
@@ -405,7 +405,7 @@
 			try {
 				var self = this;
 				$.clear(this.container);
-				this.container.appendChild($.e("a", {href: "", onclick: function() { self.open(false); return false; }}, "Главная"));
+				this.container.appendChild($.e("a", {href: "", onclick: function() { self.open(false); return false; }}, loc.main));
 				var code = [];
 				$.every(this.sections, function(section, i) {
 					if (!section)
@@ -830,8 +830,8 @@
 			this.draw_border(this.border.pulse_high, this.day_intervals, "red", this.pulse2y, this.pulse_offset_y);
 			this.draw_dotted_h(this.offset_x, this.width, Math.round(this.pulse2y(this.border.pulse_low)), "gray");
 
-			this.draw_text("Артериальное давление", /*this.offset_x + this.offset_graph_left + 2*/ Math.round(this.width / 2) - 50, this.offset_graph_top + 7, "#444444", 14);
-			this.draw_text("Частота сердечных сокращений", /*this.offset_x + this.offset_graph_left + 2*/ Math.round(this.width / 2) - 90, this.pulse_offset_y + 7, "#444444", 14);
+			this.draw_text(loc.ABP, /*this.offset_x + this.offset_graph_left + 2*/ Math.round(this.width / 2) - 50, this.offset_graph_top + 7, "#444444", 14);
+			this.draw_text(loc.rate2, /*this.offset_x + this.offset_graph_left + 2*/ Math.round(this.width / 2) - 90, this.pulse_offset_y + 7, "#444444", 14);
 		},
 
 		get_day_intervals: function() {
@@ -1111,7 +1111,7 @@
 			this.onEvent("update_analysis", $.F(this, this.draw_analysis));
 			this.onEvent("resize", $.F(this, function() {
 				var left_menu_width = 300;
-				var meas_list_width = 280;
+				var meas_list_width = 300;
 				var padding = 20;
 
 				var size = $.window_size();
@@ -1164,7 +1164,7 @@
 			}, this.cache);
 
 			var AUTH = this.query({query: "auth"});
-			var name = AUTH.user == "admin" ? "Администратор" : "Терминал " + AUTH.user.match(/(\d+)$/)[1];
+			var name = AUTH.user == "admin" ? loc.admin : loc.terminal + AUTH.user.match(/(\d+)$/)[1];
 			$.$("auth_user").innerHTML = name;
 			if (AUTH.user != "admin")
 				$.hide("tab_terminals");
@@ -1294,7 +1294,7 @@
 						this.cache.add("patient", item.id, patients);
 					}
 					var items = [
-						["Добавить карточку", {id: -1}],
+						[loc.add_card, {id: -1}],
 						null
 					];
 					$.every($.map(null, patients).sort(function(a, b) { return a.name > b.name }), function(patient) {
@@ -1330,10 +1330,10 @@
 						this.navigation.open(null, null, {type: "tab", id: id, title: title});
 					}));
 					card_menu.update([
-						["Карточка", "info"],
-						["Диагноз", "diagnosis"],
-						["Мониторирование", "monitor"],
-						["Пробный замер", "test"]
+						[loc.card, "info"],
+						[loc.diagnosis, "diagnosis"],
+						[loc.monitoring, "monitor"],
+						[loc.test_meas, "test"]
 					]);
 
 					var measlist = this.cache.get("meas", [path.terminal, path.patient]);
@@ -1346,9 +1346,9 @@
 					new Menu(meas_submenu, $.F(this, function(title, id) {
 						this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
 					})).update([
-						["Анализ", "analyze"],
-						["Условия мониторирования", "monitoring"],
-						["Комментарий", "comment"]
+						[loc.analysis, "analyze"],
+						[loc.conditions, "monitoring"],
+						[loc.comment, "comment"]
 					]);
 
 					var meas_menu = this.menus.measurements = this.menus.measurements || new Menu("meas_list", $.F(this, function(title, meas) {
@@ -1406,7 +1406,7 @@
 				meas.comment = $.utf8.decode(meas.comment || "");
 				meas.patient = patient;
 				meas.terminal = terminal;
-				meas.name = $.sprintf("Измерение #%d: %s. %s", meas.id, meas.type, meas.date);
+				meas.name = $.sprintf(loc.measurement + " #%d: %s. %s", meas.id, meas.type, meas.date);
 				measlist[Number(meas.id)] = meas;
 			});
 			this.cache.add("meas", [terminal, patient], measlist);
@@ -1434,14 +1434,14 @@
 				return value != null && !isNaN(value) ? String(value) : "-";
 			};
 			var values1 = {
-				systolic: "Систолическое АД",
-				diastolic: "Диастолическое АД",
-				pulse: "ЧСС",
-				kerdo: "Индекс Кердо",
-				s_kriteria: "Критерий S",
-				double_mult: "Двойное произведение"
+				systolic: loc.sys_abp2,
+				diastolic: loc.dia_abp2,
+				pulse: loc.rate,
+				kerdo: loc.kerdo,
+				s_kriteria: loc.criterion_s,
+				double_mult: loc.double_mult
 			};
-			var rows1 = [["", "Минимум", "Максимум", "Среднее", "Стандартное отклонение"]];
+			var rows1 = [["", loc.minimum, loc.maximum, loc.average, loc.stdev]];
 			var period = $.$("abp_analyze_period").value;
 			$.each(values1, function(title, key) {
 				var item = data_analysis[period][key];
@@ -1456,10 +1456,10 @@
 			});
 
 			var values2 = {
-				day_index: "Суточный индекс",
-				speed: "Скорость утреннего повышения"
+				day_index: loc.daily_index,
+				speed: loc.morning_speed
 			};
-			var rows2 = [["", "Систолическое АД", "Диастолическое АД"]];
+			var rows2 = [["", loc.sys_abp2, loc.dia_abp2]];
 			$.each(values2, function(title, key) {
 				var item = data_analysis[key] || {};
 				rows2.push([title, format(item.systolic), format(item.diastolic)]);
@@ -1516,31 +1516,31 @@
 
 		make_card_info: function(info, terminal, patient) {
 			var fields = [
-				["Фамилия", "family"],
-				["Имя", "name"],
-				["Отчество", "surname"],
-				["Дата рождения(дд.мм.гггг)", "burthday", "date"],
-				["Пол", "sex", "select", [["", ""], ["МУЖ", "мужской"], ["ЖЕН", "женский"]]],
-				["Рост", "rost", "numeric"],
-				["Вес", "ves", "numeric"],
-				["Окружность бедер", "bedro", "numeric"],
-				["Окружность талии", "talia", "numeric"],
-				["Семейное положение", "marital_status", "select", [["", ""], ["ЖЕНАТ", "женат / замужем"], ["ХОЛОСТ",  "не женат / не замужем"]]],
-				["Социальная категория", "social_status", "select", [["0", ""], ["1", "обычная"], ["2", "инвалид ВОВ"], ["3", "участник ВОВ"], ["4", "воин интернационалист"], ["5", "инвалид"]]],
-				["Образование", "education"],
-				["Место работы", "employment"],
-				["Профессия", "profession"],
-				["Должность", "post"],
-				["Город", "city"],
-				["Улица", "street"],
-				["Дом", "house_number", "numeric"],
-				["Корпус", "house_korpus"],
-				["Квартира", "house_unit_number", "numeric"],
-				["Домашний телефон", "house_phone"],
-				["Служебный телефон", "business_phone"],
-				["Серия полиса", "policy_series"],
-				["Номер полиса", "policy_number"],
-				["Группа диспансерного учета", "dispensary_group"],
+				[loc.surname, "family"],
+				[loc.name, "name"],
+				[loc.second_name, "surname"],
+				[loc.dob, "burthday", "date"],
+				[loc.sex, "sex", "select", [["", ""], ["МУЖ", loc.male], ["ЖЕН", loc.female]]],
+				[loc.height, "rost", "numeric"],
+				[loc.weight, "ves", "numeric"],
+				[loc.hip, "bedro", "numeric"],
+				[loc.waist, "talia", "numeric"],
+				[loc.marital_status, "marital_status", "select", [["", ""], ["ЖЕНАТ", loc.married], ["ХОЛОСТ",  loc.single]]],
+				[loc.soc_category, "social_status", "select", [["0", ""], ["1", "обычная"], ["2", "инвалид ВОВ"], ["3", "участник ВОВ"], ["4", "воин интернационалист"], ["5", "инвалид"]]],
+				[loc.education, "education"],
+				[loc.company, "employment"],
+				[loc.profession, "profession"],
+				[loc.position, "post"],
+				[loc.city, "city"],
+				[loc.street, "street"],
+				[loc.house, "house_number", "numeric"],
+				[loc.building, "house_korpus"],
+				[loc.appart, "house_unit_number", "numeric"],
+				[loc.phone1, "house_phone"],
+				[loc.phone2, "business_phone"],
+				[loc.policy_series, "policy_series"],
+				[loc.policy_number, "policy_number"],
+				[loc.dispensary_group, "dispensary_group"],
 			];
 			var container = $.clear("card_info");
 			var rows = [];
@@ -1610,11 +1610,11 @@
 				if (id > 0) {
 					this.cache.drop("patient", [terminal]);
 					this.navigation.open({type: "terminal", id: terminal});
-					alert("Карточка создана");
+					alert(loc.card_created);
 				} else {
-					alert("Ошибка при создании карточки");
+					alert(loc.card_create_error);
 				}
-			})}, info ? "Сохранить" : "Добавить")]);
+			})}, info ? loc.save : loc.add)]);
 			container.appendChild($.table.apply($, rows));
 			// console.log(info);
 		},
@@ -1691,7 +1691,7 @@
 		},
 
 		monitor_read: function() {
-			if (confirm("Нажмите кнопку 'Событие'. Продолжить чтение данных?")) {
+			if (confirm(loc.read_confirm)) {
 				this.monitor_mode = "read";
 				var self = this;
 				var iframe = $.e("iframe", {src: this.monitor_dispatcher_URL + "#read", style: {display: "none"}});
@@ -1703,7 +1703,7 @@
 		},
 
 		monitor_prog: function() {
-			if (confirm("Нажмите кнопку 'Событие'. Продолжить программирование?")) {
+			if (confirm(loc.prog_confirm)) {
 				this.monitor_mode = "prog";
 				var self = this;
 				var container = "monitor-prog";
@@ -1729,21 +1729,106 @@
 				type: "АД"
 			});
 			window.UI.event("add_meas_callback");
-			alert(response.status == "ok" ? "Загрузка данных завершена" : "Ошибка записи данных");
+			alert(response.status == "ok" ? loc.read_complete : loc.read_error1);
 		},
 
 		monitor_listener: function(event) {
 			if (this.monitor_mode == "read") {
 				if (event.data == "error")
-					alert("Ошибка чтения данных");
+					alert(loc.read_error2);
 				else
 					this.submit_monitoring(event.data);
 			} else {
 				if (event.data == "error")
-					alert("Ошибка при программировании монитора!");
+					alert(loc.prog_error);
 				else
-					alert("Программирование завершено");
+					alert(loc.prog_success);
 			}
+		}
+
+	});
+
+	var loc = new new $.Class({
+
+		initialize: function() {
+			var lang = "en";
+			var n = lang == "ru" ? 0 : 1;
+			for (var k in this.data) {
+				this[k] = this.data[k][n];
+			}
+		},
+
+		data: {
+			ABP: ["Артериальное давление", "Arterial blood pressure"],
+			sys_abp: ["САД", "Upper"],
+			dia_abp: ["ДАД", "Lower"],
+			rate: ["ЧСС", "Rate"],
+			rate2: ["Частота сердечных сокращений", "Heart rate"],
+			time: ["Время", "Time"],
+			error: ["Ошибка", "Err"],
+			main: ["Главная", "Main"],
+			admin: ["Администратор", "Administrator"],
+			terminal: ["Терминал ", "Terminal "],
+			add_card: ["Добавить карточку", "Add new card"],
+			card: ["Карточка", "Card"],
+			diagnosis: ["Диагноз", "Diagnosis"],
+			monitoring: ["Мониторирование", "Monitoring"],
+			test_meas: ["Пробный замер", "Test measurement"],
+			analysis: ["Анализ", "Analysis"],
+			conditions: ["Условия мониторирования", "Monitoring conditions"],
+			comment: ["Комментарий", "Comment"],
+			measurement: ["Измерение", "Measurement"],
+			sys_abp2: ["Систолическое АД", "Systolic ABP"],
+			dia_abp2: ["Диастолическое АД", "Diastolic ABP"],
+			kerdo: ["Индекс Кердо", "Kerdo index"],
+			criterion_s: ["Критерий S", "Criterion S"],
+			double_mult: ["Двойное произведение", "Double multiplication"],
+			minimum: ["Минимум", "Minimum"],
+			maximum: ["Максимум", "Maximum"],
+			average: ["Среднее", "Average"],
+			stdev: ["Стандартное отклонение", "Standard deviation"],
+			daily_index: ["Суточный индекс", "Daily index"],
+			morning_speed: ["Скорость утреннего повышения", "Morning increase speed"],
+			surname: ["Фамилия", "Surname"],
+			name: ["Имя", "Name"],
+			second_name: ["Отчество", "Second name"],
+			dob: ["Дата рождения(дд.мм.гггг)", "Date of birth(dd.mm.yyyy)"],
+			sex: ["Пол", "Sex"],
+			height: ["Рост", "Height"],
+			weight: ["Вес", "Weight"],
+			soc_category: ["Социальная категория", "Social category"],
+			marital_status: ["Семейное положение", "Marital status"],
+			education: ["Образование", "Education"],
+			company: ["Место работы", "Company"],
+			profession: ["Профессия", "Profession"],
+			position: ["Должность", "Position"],
+			city: ["Город", "City"],
+			street: ["Улица", "Street"],
+			phone1: ["Домашний телефон", "Home phone"],
+			phone2: ["Служебный телефон", "Work phone"],
+			male: ["мужской", "male"],
+			female: ["женский", "female"],
+			married: ["женат / замужем", "married"],
+			single: ["не женат / не замужем", "single"],
+			hip: ["Окружность бедер", "Hip"],
+			waist: ["Окружность талии", "Waist"],
+			house: ["Дом", "House"],
+			building: ["Корпус", "Building"],
+			appart: ["Квартира", "Appart"],
+			policy_series: ["Серия полиса", "Policy series"],
+			policy_number: ["Номер полиса", "Policy number"],
+			dispensary_group: ["Группа диспансерного учета", "Dispensary group"],
+			card_created: ["Карточка создана", "Card has been created"],
+			card_create_error: ["Ошибка при создании карточки", "Card create error"],
+			save: ["Сохранить", "Save"],
+			add: ["Добавить", "Add"],
+			read_confirm: ["Нажмите кнопку 'Событие'. Продолжить чтение данных?", "Press 'status' button. Continue downloading data?"],
+			prog_confirm: ["Нажмите кнопку 'Событие'. Продолжить программирование?", "Press 'status' button. Continue programming?"],
+			read_complete: ["Загрузка данных завершена", "Data download complete"],
+			read_error1: ["Ошибка записи данных", "Data download error"],
+			read_error2: ["Ошибка чтения данных", "Data read error"],
+			prog_error: ["Ошибка при программировании монитора!", "Programming error"],
+			prog_success: ["Программирование завершено", "Programming complete"],
 		}
 
 	});

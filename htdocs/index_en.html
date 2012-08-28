@@ -222,7 +222,7 @@
 								<div id="card" style="display: none">
 									<div id="patient_name" style="display: none"></div>
 									<div id="card_menu" style="padding: 10px 0px 20px; border-bottom: 1px solid gray; margin-bottom: 15px"></div>
-									<div>Измерения:</div>
+									<div>Measurements:</div>
 									<div id="meas_list" style="padding: 10px 0px 20px"></div>
 									<div>
 										<!--<a id="add_meas_link" href="" onclick="add_meas(true); return false;">Добавить измерение</a>-->
@@ -238,34 +238,34 @@
 													<td valign="top">
 														<canvas id="abp_canvas"></canvas>
 														<div id="abp_analyze" style="padding: 10px; display:none">
-															Период:
+															Period:
 															<select id="abp_analyze_period" onchange="update_analysis()">
-																<option value="full">Сутки</option>
-																<option value="day">День</option>
-																<option value="night">Ночь</option>
+																<option value="full">Full period</option>
+																<option value="day">Day</option>
+																<option value="night">Night</option>
 															</select>
 															<div id="abp_analyze_table1" style="margin: 15px 0px"></div>
 															<table border="1" cellpadding="5" cellspacing="0">
 																<tr>
 																	<td rowspan="2">&nbsp;</td>
-																	<td colspan="2">Систолическое АД</td>
-																	<td colspan="2">Диастолическое АД</td>
+																	<td colspan="2">Systolic blood pressure</td>
+																	<td colspan="2">Diatolic blood pressure</td>
 																</tr>
 																<tr>
-																	<td>Гипертензия</td>
-																	<td>Гипотензия</td>
-																	<td>Гипертензия</td>
-																	<td>Гипотензия</td>
+																	<td>Hypertension</td>
+																	<td>Hypotension</td>
+																	<td>Hypertension</td>
+																	<td>Hypotension</td>
 																</tr>
 																<tr>
-																	<td>Индекс времени</td>
+																	<td>Pressure load</td>
 																	<td id="abp_blood_pressure_load_systolic_hyper"></td>
 																	<td id="abp_blood_pressure_load_systolic_hypo"></td>
 																	<td id="abp_blood_pressure_load_diastolic_hyper"></td>
 																	<td id="abp_blood_pressure_load_diastolic_hypo"></td>
 																</tr>
 																<tr>
-																	<td>Индекс площади</td>
+																	<td>Area under curve</td>
 																	<td id="abp_area_under_curve_systolic_hyper"></td>
 																	<td id="abp_area_under_curve_systolic_hypo"></td>
 																	<td id="abp_area_under_curve_diastolic_hyper"></td>
@@ -278,43 +278,43 @@
 															<table>
 																<tr>
 																	<td>
-																		Условия мониторирования:
+																		Monitoring conditions:
 																	</td>
 																	<td>
 																		<select id="abp_monitoring_type">
 																			<option value="0"></option>
-																			<option value="1">Госпиталь</option>
-																			<option value="2">Амбулатория</option>
-																			<option value="3">Типичный рабочий день</option>
-																			<option value="4">Типичный день отдыха</option>
-																			<option value="5">Нетипичный рабочий день</option>
-																			<option value="6">Нетипичный день отдыха</option>
+																			<option value="1">Hospital</option>
+																			<option value="2">Ambulatory</option>
+																			<option value="3">Typical working day</option>
+																			<option value="4">Typical day off</option>
+																			<option value="5">Non-typical working day</option>
+																			<option value="6">Non-typical day off</option>
 																		</select>
 																	</td>
 																</tr>
 																<tr>
 																	<td>
-																		Физические нагрузки:
+																		Physical load:
 																	</td>
 																	<td>
 																		<select id="abp_monitoring_physical">
 																			<option value="0"></option>
-																			<option value="1">Средние</option>
-																			<option value="2">Легкие</option>
-																			<option value="3">Отсутствуют</option>
+																			<option value="1">Heavy</option>
+																			<option value="2">Light</option>
+																			<option value="3">None</option>
 																		</select>
 																	</td>
 																</tr>
 																<tr>
 																	<td>
-																		Эмоциональные нагрузки:
+																		Stress:
 																	</td>
 																	<td>
 																		<select id="abp_monitoring_emo">
 																			<option value="0"></option>
-																			<option value="1">Стрессовая ситуация</option>
-																			<option value="2">Легкое нервное напряжение</option>
-																			<option value="3">Отсутствуют</option>
+																			<option value="1">Stress</option>
+																			<option value="2">Tense anxiety</option>
+																			<option value="3">None</option>
 																		</select>
 																	</td>
 																</tr>
@@ -347,29 +347,29 @@
 									</div>
 									<div id="card_monitor" style="display: none; padding: 0px 20px;">
 										<div>
-											<h3>Программирование монитора</h3>
+											<h3>Monitor programming</h3>
 
 											<table>
 												<tr>
 													<td valign="top">1.</td>
 													<td>
-														Подключите монитор к компьютеру
+														Plug in monitor to the computer
 													</td>
 												</tr>
 												<tr>
 													<td valign="top">2.</td>
 													<td>
-														Запустите <a class="dispatcher" href="">диспетчер мониторирования</a>
+														Download and execute <a class="dispatcher" href="">monitoring dispatcher</a>
 													</td>
 												</tr>
 												<tr>
 													<td valign="top">3.</td>
 													<td>
-														Установите параметры мониторирования:
+														Set monitoring parameters:
 														<table>
 															<tr>
 																<td width="400">
-																	Время запуска:
+																	Start time:
 																</td>
 																<td>
 																	<span id="card_monitor_time_start"></span>
@@ -377,7 +377,7 @@
 															</tr>
 															<tr>
 																<td>
-																	Время окончания:
+																	End time:
 																</td>
 																<td>
 																	<span id="card_monitor_time_end"></span>
@@ -385,68 +385,68 @@
 															</tr>
 															<tr>
 																<td>
-																	Продолжительность:
+																	Duration:
 																</td>
 																<td>
 																	<select id="card_monitor_duration" onchange="card_monitoring_update()">
-																		<option value="1">1 час</option>
-																		<option value="2">2 часа</option>
-																		<option value="3">3 часа</option>
-																		<option value="4">4 часа</option>
-																		<option value="5">5 часов</option>
-																		<option value="6">6 часов</option>
-																		<option value="7">7 часов</option>
-																		<option value="8">8 часов</option>
-																		<option value="9">9 часов</option>
-																		<option value="10">10 часов</option>
-																		<option value="11">11 часов</option>
-																		<option value="12">12 часов</option>
-																		<option value="13">13 часов</option>
-																		<option value="14">14 часов</option>
-																		<option value="15">15 часов</option>
-																		<option value="16">16 часов</option>
-																		<option value="17">17 часов</option>
-																		<option value="18">18 часов</option>
-																		<option value="19">19 часов</option>
-																		<option value="20">20 часов</option>
-																		<option value="21">21 час</option>
-																		<option value="22">22 часа</option>
-																		<option value="23">23 часа</option>
-																		<option value="24">24 часа</option>
+																		<option value="1">1 hour</option>
+																		<option value="2">2 hours</option>
+																		<option value="3">3 hours</option>
+																		<option value="4">4 hours</option>
+																		<option value="5">5 hours</option>
+																		<option value="6">6 hours</option>
+																		<option value="7">7 hours</option>
+																		<option value="8">8 hours</option>
+																		<option value="9">9 hours</option>
+																		<option value="10">10 hours</option>
+																		<option value="11">11 hours</option>
+																		<option value="12">12 hours</option>
+																		<option value="13">13 hours</option>
+																		<option value="14">14 hours</option>
+																		<option value="15">15 hours</option>
+																		<option value="16">16 hours</option>
+																		<option value="17">17 hours</option>
+																		<option value="18">18 hours</option>
+																		<option value="19">19 hours</option>
+																		<option value="20">20 hours</option>
+																		<option value="21">21 hour</option>
+																		<option value="22">22 hours</option>
+																		<option value="23">23 hours</option>
+																		<option value="24">24 hours</option>
 																	</select>
 																</td>
 															</tr>
 															<tr>
 																<td>
-																	Активный период с <span id="card_monitor_active_start"></span> до <span id="card_monitor_active_end"></span>
+																	Active period from <span id="card_monitor_active_start"></span> till <span id="card_monitor_active_end"></span>
 																</td>
 																<td>
 																	<select id="card_monitor_interval_active" name="interval_active" onchange="card_monitoring_update()">
-																		<option value="15">15 минут</option>
-																		<option value="30">30 минут</option>
-																		<option value="45">45 минут</option>
-																		<option value="60">60 минут</option>
+																		<option value="15">15 minutes</option>
+																		<option value="30">30 minutes</option>
+																		<option value="45">45 minutes</option>
+																		<option value="60">60 minutes</option>
 																	</select>
-																	между измерениями
+																	between measurements
 																</td>
 															</tr>
 															<tr>
 																<td>
-																	Пассивный период с <span id="card_monitor_passive_start"></span> до <span id="card_monitor_passive_end"></span>
+																	Passive period from <span id="card_monitor_passive_start"></span> till <span id="card_monitor_passive_end"></span>
 																</td>
 																<td>
 																	<select id="card_monitor_interval_passive" name="interval_passive" onchange="card_monitoring_update()">
-																		<option value="15">15 минут</option>
-																		<option value="30">30 минут</option>
-																		<option value="45">45 минут</option>
-																		<option value="60">60 минут</option>
+																		<option value="15">15 minutes</option>
+																		<option value="30">30 minutes</option>
+																		<option value="45">45 minutes</option>
+																		<option value="60">60 mimutes</option>
 																	</select>
-																	между измерениями
+																	between measurements
 																</td>
 															</tr>
 															<tr>
 																<td>
-																	Индикация результата:
+																	Result indication:
 																</td>
 																<td>
 																	<input type="checkbox" id="card_monitor_indication" name="indication" checked="checked" onchange="card_monitoring_update()"></input>
@@ -475,7 +475,7 @@
 												<tr>
 													<td>4.</td>
 													<td>
-														<button onclick="window.UI.monitor_prog()">Программировать</button>
+														<button onclick="window.UI.monitor_prog()">Program monitor</button>
 													</td>
 												</tr>
 											</table>
@@ -485,7 +485,7 @@
 										<br />
 
 										<div>
-											<h3>Загрузка данных из монитора</h3>
+											<h3>Download data from monitor</h3>
 											<!--
 											<form method="POST" action="/cgi-bin/SDM/SDM.pl" target="_blank" enctype="multipart/form-data">
 												<input name="query" value="add_meas" type="hidden"></input>
@@ -497,13 +497,13 @@
 													<tr>
 														<td valign="top">1.</td>
 														<td>
-															Подключите монитор к компьютеру
+															Plug in monitor to the computer
 														</td>
 													</tr>
 													<tr>
 														<td valign="top">2.</td>
 														<td>
-															Запустите <a class="dispatcher" href="">диспетчер мониторирования</a>
+															Download and execute <a class="dispatcher" href="">monitoring dispatcher</a>
 														</td>
 													</tr>
 													<!--
@@ -523,7 +523,7 @@
 														<td>3.</td>
 														<td>
 															<!--<input type="submit" onclick="UI.event('add_meas_update')" value="Загрузить"></input>-->
-															<button onclick="window.UI.monitor_read()">Загрузить данные</button>
+															<button onclick="window.UI.monitor_read()">Download data</button>
 														</td>
 													</tr>
 												</table>
@@ -535,7 +535,7 @@
 										<div id="monitor-container"></div>
 									</div>
 									<div id="card_test" style="display: none;">
-										Пробный замер
+										Test measurement
 									</div>
 								</div>
 								<div id="terminal_info" style="display:none">
