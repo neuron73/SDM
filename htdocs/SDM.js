@@ -7,6 +7,8 @@
 		return (Number(str[0]) * 60 + Number(str[1])) * 60 * 1000;
 	};
 
+	var loc;
+
 	var SAD_MIN = 50;
 	var SAD_MAX = 300;
 	var DAD_MIN = 35;
@@ -1049,7 +1051,8 @@
 
 		'extends': $.Eventable,
 
-		initialize: function(backend, cgi_bin) {
+		initialize: function(backend, cgi_bin, language) {
+			loc = new Loc(language);
 			this.backend = backend;
 			this.cgi_bin = cgi_bin;
 			this.onEvent("add_meas_update", $.F(this, this.add_meas_update));
@@ -1748,10 +1751,9 @@
 
 	});
 
-	var loc = new new $.Class({
+	var Loc = new $.Class({
 
-		initialize: function() {
-			var lang = "en";
+		initialize: function(lang) {
 			var n = lang == "ru" ? 0 : 1;
 			for (var k in this.data) {
 				this[k] = this.data[k][n];
