@@ -222,8 +222,12 @@
 								<div id="card" style="display: none">
 									<div id="patient_name" style="display: none"></div>
 									<div id="card_menu" style="padding: 10px 0px 20px; border-bottom: 1px solid gray; margin-bottom: 15px"></div>
-									<div>[% measurements %]:</div>
-									<div id="meas_list" style="padding: 10px 0px 20px"></div>
+									<div id="monitoring_list_title">[% monitoring %]:</div>
+									<div id="monitoring_list" style="padding: 10px 0px 20px"></div>
+									<div id="abpm_list_title" style="border-top: 1px solid gray; padding-top: 10px;">[% abp_measurements %]:</div>
+									<div id="abpm_list" style="padding: 10px 0px 20px"></div>
+									<div id="ecg_list_title" style="border-top: 1px solid gray; padding-top: 10px;">[% ecg_measurements %]:</div>
+									<div id="ecg_list" style="padding: 10px 0px 20px"></div>
 									<div>
 										<!--<a id="add_meas_link" href="" onclick="add_meas(true); return false;">Добавить измерение</a>-->
 									</div>

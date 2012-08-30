@@ -18,7 +18,9 @@ my $header = "Content-type: text/html; charset=UTF-8\n\n";
 my $output = '';
 
 my $loc = {
-	measurements => ["Измерения", "Measurements"],
+	abp_measurements => ["Измерения АД", "ABP measurements"],
+	ecg_measurements => ["Измерения ЭКГ", "ECG measurements"],
+	monitoring => ["Мониторирование АД", "ABP monitoring"],
 	period => ["Период", "Period"],
 	full_period => ["Сутки", "Full period"],
 	day => ["День", "Day"],
@@ -45,7 +47,7 @@ my $loc = {
 	tense_anxiety => ["Легкое нервное напряжение", "Tense anxiety"],
 	programming => ["Программирование монитора", "Monitor programming"],
 	plug_in => ["Подключите монитор к компьютеру", "Plug in monitor to the computer"],
-	execute => ["Запустите", "Download and execute"],
+	execute => ["Запустите ", "Download and execute "],
 	dispatcher => ["диспетчер мониторирования", "monitoring dispatcher"],
 	parameters => ["Установите параметры мониторирования", "Set monitoring parameters"],
 	start_time => ["Время запуска", "Start time"],
@@ -63,7 +65,7 @@ my $loc = {
 	program => ["Программировать", "Program monitor"],
 	data_load => ["Загрузка данных из монитора", "Download data from monitor"],
 	do_load => ["Загрузить данные", "Download data"],
-	test_meas => ["Пробный замер", "Test measurement"]
+	test_meas => ["Пробный замер", "Test measurement"],
 };
 
 my $lang = CGI::http('Accept-language') =~ /^ru/ ? "ru" : "en";

@@ -1345,34 +1345,49 @@
 					}
 
 					var active_meas;
-					var meas_submenu = $.e("div", {'class': "meas_submenu"});
-					new Menu(meas_submenu, $.F(this, function(title, id) {
+					var active_meas_type;
+					var meas_submenu = {};
+					new Menu(meas_submenu["АД"] = $.e("div", {'class': "meas_submenu"}), $.F(this, function(title, id) {
 						this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
 					})).update([
 						[loc.analysis, "analyze"],
 						[loc.conditions, "monitoring"],
 						[loc.comment, "comment"]
 					]);
+					meas_submenu["ИАД"] = $.div();
+					meas_submenu["ЭКГ"] = $.div();
 
-					var meas_menu = this.menus.measurements = this.menus.measurements || new Menu("meas_list", $.F(this, function(title, meas) {
-						current_meas = {type: "meas", id: meas.id, title: title};
-						this.navigation.open(null, null, current_meas);
-					}));
-					var items = [];
+					var types = ["АД", "ИАД", "ЭКГ"];
+					var containers = ["monitoring", "abpm", "ecg"];
+					var items = {};
+					this.menus.measurements = this.menus.measurements || {};
+					$.every(types, function(type, index) {
+						this.menus.measurements[type] = this.menus.measurements[type] || new Menu(containers[index] + "_list", $.F(this, function(title, meas) {
+							current_meas = {type: "meas", id: meas.id, title: title};
+							this.navigation.open(null, null, current_meas);
+						}));
+						items[type] = [];
+					}, this);
+
 					$.every(measlist, function(meas) {
 						if (meas) {
-							items.push([meas.name, meas, function(element) {
+							items[meas.type].push([meas.name, meas, function(element) {
 								if (active_meas) {
-									meas_submenu.parentNode.removeChild(meas_submenu);
+									meas_submenu[active_meas_type].parentNode.removeChild(meas_submenu[active_meas_type]);
 									active_meas.className = null;
 								}
 								active_meas = element.parentNode; // div
-								active_meas.appendChild(meas_submenu);
+								active_meas.appendChild(meas_submenu[active_meas_type = meas.type]);
 								active_meas.className = "active_meas";
 							}]);
 						}
 					});
-					meas_menu.update(items);
+
+					$.every(types, function(type, index) {
+						$.toggle(items[type].length > 0, containers[index] + "_list_title");
+						this.menus.measurements[type].update(items[type]);
+					}, this);
+
 					$.show("card");
 					this.block_main("card");
 				} else {
@@ -1409,7 +1424,8 @@
 				meas.comment = $.utf8.decode(meas.comment || "");
 				meas.patient = patient;
 				meas.terminal = terminal;
-				meas.name = $.sprintf(loc.measurement + " #%d: %s. %s", meas.id, meas.type, meas.date);
+				var name = meas.type == "ИАД" ? loc.measurement : loc.monitoring;
+				meas.name = $.sprintf("%s #%d: %s", name, meas.id, meas.date);
 				measlist[Number(meas.id)] = meas;
 			});
 			this.cache.add("meas", [terminal, patient], measlist);
