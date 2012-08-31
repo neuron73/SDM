@@ -107,11 +107,11 @@
 			};
 
 			var analyze_period = $.F(this, function(period) {
-				var keys = ["systolic", "diastolic", "pulse", "kerdo", "s_kriteria", "double_mult"];
+				var keys = ["systolic", "diastolic", "pulse", "pulse_bp", "kerdo", "s_kriteria", "double_product"];
 				var analysis = {};
 				this.kerdo = [];
 				this.s_kriteria = [];
-				this.double_mult = [];
+				this.double_product = [];
 				var filter = function(v) {
 					return v;
 				};
@@ -130,6 +130,9 @@
 					data.diastolic[i] = this.diastolic[i];
 					data.pulse[i] = this.pulse[i];
 
+					// Пульсовое АД = АД сист - АД диаст
+					data.pulse_bp[i] = this.systolic[i] - this.diastolic[i];
+
 					// индекс Кердо = 100 * (1 - АД) / ЧСС
 					data.kerdo[i] = 100 * (1 - this.diastolic[i] / this.pulse[i]);
 
@@ -137,7 +140,7 @@
 					data.s_kriteria[i] = this.systolic[i] * this.diastolic[i] / (this.systolic[i] - this.diastolic[i]);
 
 					// Двойное произведение = АД сист * ЧСС / 100
-					data.double_mult[i] = this.systolic[i] * this.pulse[i] / 100;
+					data.double_product[i] = this.systolic[i] * this.pulse[i] / 100;
 				}
 
 				$.each(keys, function(key) {
@@ -1453,18 +1456,20 @@
 				return value != null && !isNaN(value) ? String(value) : "-";
 			};
 			var values1 = {
-				systolic: loc.sys_abp2,
-				diastolic: loc.dia_abp2,
-				pulse: loc.rate,
-				kerdo: loc.kerdo,
-				s_kriteria: loc.criterion_s,
-				double_mult: loc.double_mult
+				systolic: [loc.sys_abp2, loc.sys_abp3],
+				diastolic: [loc.dia_abp2, loc.dia_abp3],
+				pulse_bp: [loc.pulse_bp, loc.pulse_bp2],
+				pulse: [loc.rate, loc.rate2],
+				kerdo: [loc.kerdo, loc.kerdo2],
+				s_kriteria: [loc.criterion_s, loc.criterion_s2],
+				double_product: [loc.double_product, loc.double_product2]
 			};
-			var rows1 = [["", loc.minimum, loc.maximum, loc.average, loc.stdev]];
+			var rows1 = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
 			var period = $.$("abp_analyze_period").value;
-			$.each(values1, function(title, key) {
+			$.each(values1, function(name, key) {
 				var item = data_analysis[period][key];
-				rows1.push([title, format(item.min), format(item.max), format(item.mean), format(item.std)]);
+				var title = $.e("span", {title: name[1], style: {cursor: name[1] != null ? "help" : null}}, [name[0]]);
+				rows1.push([title, format(item.max), format(item.mean), format(item.min), format(item.std)]);
 			});
 
 			$.every(["systolic", "diastolic"], function(key1) {
@@ -1798,9 +1803,16 @@
 			measurement: ["Измерение", "Measurement"],
 			sys_abp2: ["Систолическое АД", "Systolic ABP"],
 			dia_abp2: ["Диастолическое АД", "Diastolic ABP"],
+			sys_abp3: ["Систолическое артериальное давление", "Systolic arterial blood pressure"],
+			dia_abp3: ["Диастолическое артериальное давление", "Diastolic arterial blood pressure"],
+			pulse_bp: ["Пульсовое АД", "Pulse ABP"],
+			pulse_bp2: ["Пульсовое АД = САД - ДАД", null],
 			kerdo: ["Индекс Кердо", "Kerdo index"],
+			kerdo2: ["Вегетативный индекс Кердо (ВИ) = (1 - ДАД / ЧСС) * 100", null],
 			criterion_s: ["Критерий S", "Criterion S"],
-			double_mult: ["Двойное произведение", "Double multiplication"],
+			criterion_s2: ["Критерий S = (САД * ДАД) / (САД - ДАД)", null],
+			double_product: ["Двойное произведение", "Double product"],
+			double_product2: ["Двойное произведение = (САД * ЧСС) / 100", null],
 			minimum: ["Минимум", "Minimum"],
 			maximum: ["Максимум", "Maximum"],
 			average: ["Среднее", "Average"],
