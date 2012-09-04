@@ -15,30 +15,30 @@ use Data::Dumper;
 use JSON;
 use POSIX qw(strftime);
 use Apache::Htpasswd;
+use Conf;
 # use MIME::Lite;
 my $q = CGI->new;
 
-use constant HTPASSWD => '/opt/apache/cgi-bin/SDM/.htpasswd';
-use constant DB => 'mysql';
+my $conf = Conf::conf();
 
 my $dbh;
 my $TABLE = {};
 
-if (DB eq 'mssql') {
+if ($conf->{DB} eq 'mssql') {
 	require DBD::Sybase;
 	$TABLE->{terminals} = "[Terminals]";
 	$TABLE->{patients} = "[S_pacient]";
 	$TABLE->{sessions} = "[s_pac_meas]";
 	$TABLE->{measurements} = "[s_meas]";
 
-	$dbh = DBI->connect("dbi:Sybase:server=SDM", "SDM", "123321") or die "mssql connect error";
-} elsif (DB eq 'mysql') {
+	$dbh = DBI->connect("dbi:Sybase:server=SDM", $conf->{mssql_user}, $conf->{mssql_pwd}) or die "mssql connect error";
+} elsif ($conf->{DB} eq 'mysql') {
 	$TABLE->{terminals} = "terminals";
 	$TABLE->{patients} = "pacients";
 	$TABLE->{sessions} = "pac_meas";
 	$TABLE->{measurements} = "meas";
 
-	$dbh = DBI->connect("DBI:mysql:database=SDM;host=localhost;port=3306", "root", "mypassword") or die "mysql connect error";
+	$dbh = DBI->connect("DBI:mysql:database=SDM;host=localhost;port=3306", $conf->{mysql_user}, $conf->{mysql_pwd}) or die "mysql connect error";
 }
 
 
@@ -421,7 +421,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 	error("Access Denied") unless $USER eq "admin";
 
-	my $auth = new Apache::Htpasswd(HTPASSWD);
+	my $auth = new Apache::Htpasswd($conf->{HTPASSWD});
 	my $password = "123";
 	my $terminal_id = $q->param("terminal");
 	$auth->htpasswd("terminal" . $terminal_id, $password, $q->param("reset") eq "1" ? {'overwrite' => 1} : undef);
@@ -437,7 +437,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $sth = $dbh->prepare("select n_terminal as id, name_terminal as name, email_terminal as email from $TABLE->{terminals}");
 	$sth->execute();
 
-	my $auth = new Apache::Htpasswd(HTPASSWD);
+	my $auth = new Apache::Htpasswd($conf->{HTPASSWD});
 	my @terminals;
 	while (my $row = $sth->fetchrow_hashref()) {
 		$row->{pwd} = $auth->fetchPass("terminal" . $row->{id}) ? 1 : 0;
