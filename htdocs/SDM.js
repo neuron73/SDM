@@ -1127,9 +1127,9 @@
 				$.$("card").style.width = left_menu_width + "px";
 				$.$("abp_meas_list").style.height = (size.height - 60) + "px";
 				$.$("abp_analyze").style.width = (size.width - meas_list_width - left_menu_width - padding) + "px";
-				$.$("abp_monitoring").style.width = $.$("abp_comment").style.width = (size.width - left_menu_width - 40) + "px";
+				$.$("abp_monitoring").style.width = $.$("abp_comment").style.width = $.$("abp_conclusion").style.width = (size.width - left_menu_width  - meas_list_width - 40) + "px";
 				if (this.analysis) {
-					this.analysis.resize(size.width - left_menu_width - meas_list_width, size.height - 50);
+					this.analysis.resize(size.width - left_menu_width - meas_list_width, this.panel ? size.height - 500 : size.height - 50);
 				}
 				if (this.ecg_iframe != null) {
 					$.style(this.ecg_iframe, {width: size.width - 300, height: size.height - 70});
@@ -1336,10 +1336,11 @@
 						this.navigation.open(null, null, {type: "tab", id: id, title: title});
 					}));
 					card_menu.update([
-						[loc.card, "info"],
+						[loc.card_info, "info"],
+						[loc.card_history, "history"],
 						[loc.diagnosis, "diagnosis"],
-						[loc.monitoring, "monitor"],
-						[loc.test_meas, "test"]
+						[loc.new_monitoring, "monitor"],
+						[loc.new_meas, "test"]
 					]);
 
 					var measlist = this.cache.get("meas", [path.terminal, path.patient]);
@@ -1355,7 +1356,8 @@
 					})).update([
 						[loc.analysis, "analyze"],
 						[loc.conditions, "monitoring"],
-						[loc.comment, "comment"]
+						[loc.comment, "comment"],
+						[loc.conclusion, "conclusion"]
 					]);
 					meas_submenu["ИАД"] = $.div();
 					meas_submenu["ЭКГ"] = $.div();
@@ -1437,14 +1439,18 @@
 
 		open_meas_panel: function(item, path) {
 			try {
-				if (item && item.id == "analyze") {
-					this.draw_analysis();
+				this.panel = item && item.id;
+				if (item) {
+					if (item.id == "analyze")
+						this.draw_analysis();
 				}
-				$.toggle(item == null, "abp_canvas");
+				// $.toggle(item != "monitoring", "abp_canvas");
+				// $.toggle(item != "monitoring", "abp_meas_list");
 				$.toggle(item != null && item.id == "analyze", "abp_analyze");
 				$.toggle(item != null && item.id == "monitoring", "abp_monitoring");
 				$.toggle(item != null && item.id == "comment", "abp_comment");
-				$.toggle(item == null || item.id == "analyze", "abp_meas_list");
+				$.toggle(item != null && item.id == "conclusion", "abp_conclusion");
+				this.event("resize");
 			} catch(e) {
 				$.error("open meas panel error: %e", e);
 			}
@@ -1464,37 +1470,30 @@
 				s_kriteria: [loc.criterion_s, loc.criterion_s2],
 				double_product: [loc.double_product, loc.double_product2]
 			};
-			var rows1 = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
+			var rows = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
 			var period = $.$("abp_analyze_period").value;
 			$.each(values1, function(name, key) {
 				var item = data_analysis[period][key];
 				var title = $.e("span", {title: name[1], style: {cursor: name[1] != null ? "help" : null}}, [name[0]]);
-				rows1.push([title, format(item.max), format(item.mean), format(item.min), format(item.std)]);
+				rows.push([title, format(item.max), format(item.mean), format(item.min), format(item.std)]);
 			});
+
+			var table = $.table.apply($, rows);
+			table.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+			table.width = 700;
+			table.cellPadding = 5;
+			table.border = 1;
+			$.clear("abp_analyze_table1").appendChild(table);
 
 			$.every(["systolic", "diastolic"], function(key1) {
 				$.every(["hyper", "hypo"], function(key2) {
 					$.$("abp_blood_pressure_load_" + key1 + "_" + key2).innerHTML = data_analysis.blood_pressure_load[key1][key2];
 					$.$("abp_area_under_curve_" + key1 + "_" + key2).innerHTML = data_analysis.area_under_curve[key1][key2];
 				});
+				$.$("daily_index_" + key1).innerHTML = format(data_analysis.day_index[key1]);
+				$.$("morning_speed_" + key1).innerHTML = format(data_analysis.speed[key1]);
 			});
 
-			var values2 = {
-				day_index: loc.daily_index,
-				speed: loc.morning_speed
-			};
-			var rows2 = [["", loc.sys_abp2, loc.dia_abp2]];
-			$.each(values2, function(title, key) {
-				var item = data_analysis[key] || {};
-				rows2.push([title, format(item.systolic), format(item.diastolic)]);
-			});
-
-			var table1 = $.table.apply($, rows1);
-			var table2 = $.table.apply($, rows2);
-			table1.cellPadding = table2.cellPadding = 5;
-			table1.border = table2.border = 1;
-			$.clear("abp_analyze_table1").appendChild(table1);
-			$.clear("abp_analyze_table2").appendChild(table2);
 		},
 
 		open_meas: function(item, path) {
@@ -1707,6 +1706,7 @@
 			// console.log(block)
 			$.toggle((block || "").substr(0, 4) == "card", "card_data");
 			$.toggle(block == "card_meas", "card_meas");
+			$.toggle(block == "card_history", "card_history");
 			$.toggle(block == "card_info", "card_info");
 			$.toggle(block == "card_diagnosis", "card_diagnosis");
 			$.toggle(block == "card_monitor", "card_monitor");
@@ -1793,13 +1793,16 @@
 			admin: ["Администратор", "Administrator"],
 			terminal: ["Терминал ", "Terminal "],
 			add_card: ["Добавить карточку", "Add new card"],
-			card: ["Карточка", "Card"],
+			card_info: ["Пациент", "Patient"],
+			card_history: ["Карточка", "Card"],
 			diagnosis: ["Диагноз", "Diagnosis"],
 			monitoring: ["Мониторирование", "Monitoring"],
-			test_meas: ["Пробный замер", "Test measurement"],
+			new_monitoring: ["Новое мониторирование", "New monitoring"],
+			new_meas: ["Новое измерение", "New measurement"],
 			analysis: ["Анализ", "Analysis"],
 			conditions: ["Условия мониторирования", "Monitoring conditions"],
 			comment: ["Комментарий", "Comment"],
+			conclusion: ["Заключение", "Conclusion"],
 			measurement: ["Измерение", "Measurement"],
 			sys_abp2: ["Систолическое АД", "Systolic ABP"],
 			dia_abp2: ["Диастолическое АД", "Diastolic ABP"],
@@ -1817,8 +1820,6 @@
 			maximum: ["Максимум", "Maximum"],
 			average: ["Среднее", "Average"],
 			stdev: ["Стандартное отклонение", "Standard deviation"],
-			daily_index: ["Суточный индекс", "Daily index"],
-			morning_speed: ["Скорость утреннего повышения", "Morning increase speed"],
 			surname: ["Фамилия", "Surname"],
 			name: ["Имя", "Name"],
 			second_name: ["Отчество", "Second name"],

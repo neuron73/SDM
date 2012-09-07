@@ -66,6 +66,8 @@ my $loc = {
 	data_load => ["Загрузка данных из монитора", "Download data from monitor"],
 	do_load => ["Загрузить данные", "Download data"],
 	test_meas => ["Пробный замер", "Test measurement"],
+	daily_index => ["Суточный индекс", "Daily index"],
+	morning_speed => ["Скорость утреннего повышения", "Morning increase speed"],
 };
 
 my $lang = CGI::http('Accept-language') =~ /^ru/ ? "ru" : "en";

@@ -85,13 +85,13 @@
 				color: red;
 			}
 
-			input[type="text"] {
+			input[type="text"], textarea {
 				border: 1px solid gray;
 				padding: 2px 4px;
 				margin: 1px;
 			}
 
-			input[type="text"]:focus {
+			input[type="text"]:focus, textarea:focus {
 				border: 2px solid #444 !important;
 				margin: 0px !important;
 				background-color: white !important;
@@ -242,41 +242,63 @@
 													<td valign="top">
 														<canvas id="abp_canvas"></canvas>
 														<div id="abp_analyze" style="padding: 10px; display:none">
-															[% period %]:
-															<select id="abp_analyze_period" onchange="update_analysis()">
-																<option value="full">[% full_period %]</option>
-																<option value="day">[% day %]</option>
-																<option value="night">[% night %]</option>
-															</select>
-															<div id="abp_analyze_table1" style="margin: 15px 0px"></div>
-															<table border="1" cellpadding="5" cellspacing="0">
+															<table>
 																<tr>
-																	<td rowspan="2">&nbsp;</td>
-																	<td colspan="2">[% systolic_abp %]</td>
-																	<td colspan="2">[% diastolic_abp %]</td>
+																	<td width="200" valign="top" align="center">
+																		[% period %]:
+																		<select id="abp_analyze_period" onchange="update_analysis()">
+																			<option value="full">[% full_period %]</option>
+																			<option value="day">[% day %]</option>
+																			<option value="night">[% night %]</option>
+																		</select>
+																	</td>
+																	<td>
+																		<div id="abp_analyze_table1" style="margin: 0px 0px 5px"></div>
+																	</td>
 																</tr>
 																<tr>
-																	<td>[% hypertension %]</td>
-																	<td>[% hypotension %]</td>
-																	<td>[% hypertension %]</td>
-																	<td>[% hypotension %]</td>
-																</tr>
-																<tr>
-																	<td>[% pressure_load %]</td>
-																	<td id="abp_blood_pressure_load_systolic_hyper"></td>
-																	<td id="abp_blood_pressure_load_systolic_hypo"></td>
-																	<td id="abp_blood_pressure_load_diastolic_hyper"></td>
-																	<td id="abp_blood_pressure_load_diastolic_hypo"></td>
-																</tr>
-																<tr>
-																	<td>[% area_under_curve %]</td>
-																	<td id="abp_area_under_curve_systolic_hyper"></td>
-																	<td id="abp_area_under_curve_systolic_hypo"></td>
-																	<td id="abp_area_under_curve_diastolic_hyper"></td>
-																	<td id="abp_area_under_curve_diastolic_hypo"></td>
+																	<td>&nbsp;</td>
+																	<td>
+																		<table border="1" cellpadding="5" cellspacing="0" width="700">
+																			<tr>
+																				<td rowspan="2">&nbsp;</td>
+																				<td align="center" colspan="2">[% systolic_abp %]</td>
+																				<td align="center" colspan="2">[% diastolic_abp %]</td>
+																			</tr>
+																			<tr>
+																				<td align="center">[% hypertension %]</td>
+																				<td align="center">[% hypotension %]</td>
+																				<td align="center">[% hypertension %]</td>
+																				<td align="center">[% hypotension %]</td>
+																			</tr>
+																			<tr>
+																				<td>[% pressure_load %]</td>
+																				<td align="center" id="abp_blood_pressure_load_systolic_hyper"></td>
+																				<td align="center" id="abp_blood_pressure_load_systolic_hypo"></td>
+																				<td align="center" id="abp_blood_pressure_load_diastolic_hyper"></td>
+																				<td align="center" id="abp_blood_pressure_load_diastolic_hypo"></td>
+																			</tr>
+																			<tr>
+																				<td>[% area_under_curve %]</td>
+																				<td align="center" id="abp_area_under_curve_systolic_hyper"></td>
+																				<td align="center" id="abp_area_under_curve_systolic_hypo"></td>
+																				<td align="center" id="abp_area_under_curve_diastolic_hyper"></td>
+																				<td align="center" id="abp_area_under_curve_diastolic_hypo"></td>
+																			</tr>
+																			<tr>
+																				<td>[% daily_index %]</td>
+																				<td align="center" colspan="2" id="daily_index_systolic"></td>
+																				<td align="center" colspan="2" id="daily_index_diastolic"></td>
+																			</tr>
+																			<tr>
+																				<td>[% morning_speed %]</td>
+																				<td align="center" colspan="2" id="morning_speed_systolic"></td>
+																				<td align="center" colspan="2" id="morning_speed_diastolic"></td>
+																			</tr>
+																		</table>
+																	</td>
 																</tr>
 															</table>
-															<div id="abp_analyze_table2" style="margin: 15px 0px"></div>
 														</div>
 														<div id="abp_monitoring" style="margin: 10px; display:none">
 															<table>
@@ -325,7 +347,12 @@
 															</table>
 														</div>
 														<div id="abp_comment" style="display:none; padding: 10px">
+															Комментарий врача:
 															<textarea id="abp_monitoring_comment" style="width: 100%; height: 300px;"></textarea>
+														</div>
+														<div id="abp_conclusion" style="display:none; padding: 10px">
+															Заключение:
+															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 300px;"></textarea>
 														</div>
 													</td>
 													<td valign="top">
@@ -345,6 +372,9 @@
 									</div>
 									<div id="card_info" style="display: none; padding: 20px;">
 										card_info
+									</div>
+									<div id="card_history" style="display: none; padding: 20px;">
+										card_history
 									</div>
 									<div id="card_diagnosis" style="display: none; padding: 20px;">
 										card_diagnosis
