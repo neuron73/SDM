@@ -318,7 +318,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 	my $n_kart = int($q->param("patient"));
 	my $sth = $dbh->prepare(
-		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment from $TABLE->{sessions} " .
+		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment, diagnosis from $TABLE->{sessions} " .
 		"where n_terminal = $n_terminal and n_kart = $n_kart order by pac_measID"
 	);
 	$sth->execute();

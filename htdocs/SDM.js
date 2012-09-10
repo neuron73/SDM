@@ -1171,7 +1171,7 @@
 
 			var AUTH = this.query({query: "auth"});
 			var name = AUTH.user == "admin" ? loc.admin : loc.terminal + AUTH.user.match(/(\d+)$/)[1];
-			$.$("auth_user").innerHTML = name;
+			$.$("auth_user_name").innerHTML = name;
 			if (AUTH.user != "admin")
 				$.hide("tab_terminals");
 			this.show_terminals();
@@ -1181,6 +1181,14 @@
 				this.navigation.chroot(Number(m[1]));
 			}
 			this.navigation.init();
+		},
+
+		logout: function() {
+			var xhr = new $.xhr();
+			xhr.open("GET", this.backend + "?query=logout", true, "aaa", "aaa");
+			xhr.send("");
+			xhr.abort();
+			window.location = "/SDM/logout.html";
 		},
 
 		query: function(query) {
@@ -1427,6 +1435,7 @@
 				meas.type = $.utf8.decode(meas.type);
 				meas.date = date.join(".");
 				meas.comment = $.utf8.decode(meas.comment || "");
+				meas.diagnosis = $.utf8.decode(meas.diagnosis || "");
 				meas.patient = patient;
 				meas.terminal = terminal;
 				var name = meas.type == "ИАД" ? loc.measurement : loc.monitoring;
@@ -1517,6 +1526,8 @@
 						});
 						container.appendChild(this.ecg_iframe);
 					} else if (meas.type == "АД") {
+						$.$("abp_monitoring_comment").value = meas.comment;
+						$.$("abp_monitoring_conclusion").value = meas.diagnosis;
 						this.analysis.load(measdata);
 						this.analysis.drawList($.$("abp_meas_list"));
 						this.analysis.draw();

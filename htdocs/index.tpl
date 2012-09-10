@@ -184,6 +184,11 @@
 					return terminal + "-" + patient + "-" + response.n;
 				}
 
+				window.toggle_auth = function(exit) {
+					$.toggle(!exit, "auth_user_name");
+					$.toggle(exit, "auth_user_logout");
+				}
+
 				window.onload = function() {
 					$.every($.$$(".dispatcher"), function(a) {
 						a.href = "monitor.exe?t=" + $.now();
@@ -202,7 +207,9 @@
 							<td>
 								<div id="navigation"></div>
 							</td>
-							<td id="auth_user" style="width: 110px; background-color: #eee; text-align: center">
+							<td id="auth_user" onmouseover="toggle_auth(true)" onmouseout="toggle_auth(false)" style="width: 110px; background-color: #eee; text-align: center">
+								<div id="auth_user_name"></div>
+								<div id="auth_user_logout" style="display:none"><a href="" onclick="UI.logout(); return false;">[% exit %]</a></div>
 							</td>
 						</tr>
 					</table>

@@ -68,6 +68,7 @@ my $loc = {
 	test_meas => ["Пробный замер", "Test measurement"],
 	daily_index => ["Суточный индекс", "Daily index"],
 	morning_speed => ["Скорость утреннего повышения", "Morning increase speed"],
+	exit => ["Выход", "Exit"],
 };
 
 my $lang = CGI::http('Accept-language') =~ /^ru/ ? "ru" : "en";
