@@ -1,8 +1,8 @@
 package Conf;
 
 my $conf = {
-	DB => 'mssql',
-	HTPASSWD => '/opt/apache/cgi-bin/SDM/.htpasswd',
+	DB => 'mysql',
+	HTPASSWD => '/usr/lib/cgi-bin/SDM/.htpasswd',
 	mysql_user => 'root',
 	mysql_pwd => 'mypassword',
 	mssql_user => 'SDM',

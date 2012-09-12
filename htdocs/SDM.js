@@ -1683,6 +1683,7 @@
 						["Физическая активность", "", 0],
 						*/
 					];
+/*
 					var container = $.clear("card_diagnosis");
 					var rows = [];
 					var chomp = function(s) {
@@ -1697,6 +1698,7 @@
 						]);
 					});
 					container.appendChild($.table.apply($, rows));
+*/
 				} else if (item && item.id == "monitor") {
 					card_monitoring_update();
 				} else if (item && item.id == "test") {
@@ -1706,11 +1708,26 @@
 					});
 					$.inject($.clear("card_test"), this.abp_iframe);
 					this.event("resize");
+				} else if (item && item.id == "history") {
+					this.make_history(path);
 				}
 				this.block_main(item == null ? "card_meas" : "card_" + item.id);
 			} catch(e) {
 				$.error("open tab error: %e", e);
 			}
+		},
+
+		make_history: function(path) {
+			var measlist = this.cache.get("meas", [path.terminal, path.patient]);
+			var rows = [];
+			$.every(measlist, function(meas) {
+				if (meas && meas.type == "АД") {
+					var title = "суточное мониторирование СМАД #" + meas.id;
+					var href = "#terminal:" + this.navigation.get("terminal") + ",patient:" + this.navigation.get("patient") + ",meas:" + meas.id;
+					rows.push([meas.date, $.div("Проведено ", $.e("a", {href: href}, title))]);
+				}
+			}, this);
+			$.inject($.clear("card_history"), $.table.apply($, rows).format(null, [{width: 100}]));
 		},
 
 		block_main: function(block) {

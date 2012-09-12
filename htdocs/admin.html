@@ -25,6 +25,8 @@
 			(function() {
 				var $ = require("utils", "web", "json");
 
+				window.$ = $;
+
 				function query(query) {
 					var xhr = new $.xhr();
 
@@ -38,8 +40,13 @@
 					return $.json.decode(xhr.responseText);
 				}
 				function print_terminals(terminals) {
-					var container = $.$("terminals");
-					var rows = [];
+					var container = $.clear("terminals");
+					var rows = [[
+						"Номер терминала",
+						"Название",
+						"Контактный email",
+						"Действие"
+					]];
 					$.every(terminals, function(terminal) {
 						var reset= terminal.pwd == 1 ? 1 : 0;
 						rows.push([
@@ -50,7 +57,9 @@
 						);
 					});
 					var table = $.table.apply($, rows);
-					table.cellSpacing = 5;
+					table.cellSpacing = 0;
+					table.cellPadding = 5;
+					table.border = 1;
 					container.appendChild(table);
 				}
 				function password_reset(terminal_id, reset) {
@@ -65,10 +74,46 @@
 						print_terminals(terminals);
 					}
 				}
+				window.create_terminal = function() {
+					var response = query({query: "create_terminal", name: $.$("new_terminal_name").value, email: $.$("new_terminal_email").value});
+					alert("Создан терминал с номером " + response.id);
+					print_terminals(query({query: "login_list"}));
+					$.hide('new_terminal');
+					$.show('new_terminal_button');
+				}
 			})();
 		</script>
 	</head>
 	<body>
 		<div id="terminals"></div>
+		<div id="new_terminal_button">
+			<a href="" onclick="$.show('new_terminal'); $.hide('new_terminal_button'); return false;">Создать терминал</a>
+		</div>
+		<div id="new_terminal" style="display:none">
+			<table>
+				<tr>
+					<td>
+						Терминал:
+					</td>
+					<td>
+						<input id="new_terminal_name" type="text"></input>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Email:
+					</td>
+					<td>
+						<input id="new_terminal_email" type="text"></input>
+					</td>
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+					<td>
+						<button onclick="create_terminal()">Создать</button>
+					</td>
+				</tr>
+			</table>
+		</div>
 	</body>
 </html>

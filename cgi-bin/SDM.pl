@@ -4,7 +4,7 @@ BEGIN {
 	$ENV{SYBASE} = '/usr/freetds';
 }
 
-my $USER = $ENV{REMOTE_USER} || "admin";
+my $USER = $ENV{REMOTE_USER};
 exit unless $USER;
 my $USER_TERMINAL = $1 if $USER =~ /^terminal(\d+)$/;
 
@@ -457,6 +457,19 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 		push @terminals, $row;
 	}
 	$result = \@terminals;
+
+} elsif ($query eq "create_terminal") {
+
+	print $header;
+
+	error("Access Denied") unless $USER eq "admin";
+	my $sth1 = $dbh->prepare("select max(n_terminal) from $TABLE->{terminals}");
+	my $res = $sth1->execute();
+	my @rows = $sth1->fetchrow_array();
+	my $n = @rows ? $rows[0] + 1 : 0;
+	my $sth2 = $dbh->prepare("insert into $TABLE->{terminals} (n_terminal, name_terminal, email_terminal) values (?, ?, ?)");
+	my $success = $sth2->execute($n, $q->param("name"), $q->param("email"));
+	$result = {id => $success ? $n : -1};
 
 } else {
 
