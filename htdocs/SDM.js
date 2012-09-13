@@ -1643,8 +1643,13 @@
 				var id = Number(resp);
 				if (id > 0) {
 					this.cache.drop("patient", [terminal]);
-					this.navigation.open({type: "terminal", id: terminal});
-					alert(loc.card_created);
+					if (info) {
+						this.cache.drop("patient_info", [terminal, patient]);
+						alert(loc.card_changed);
+					} else {
+						this.navigation.open({type: "terminal", id: terminal});
+						alert(loc.card_created);
+					}
 				} else {
 					alert(loc.card_create_error);
 				}
@@ -1878,6 +1883,7 @@
 			policy_number: ["Номер полиса", "Policy number"],
 			dispensary_group: ["Группа диспансерного учета", "Dispensary group"],
 			card_created: ["Карточка создана", "Card has been created"],
+			card_changed: ["Карточка изменена", "Card has been modified"],
 			card_create_error: ["Ошибка при создании карточки", "Card create error"],
 			save: ["Сохранить", "Save"],
 			add: ["Добавить", "Add"],
