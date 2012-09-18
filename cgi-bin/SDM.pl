@@ -335,7 +335,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $n_kart = int($q->param("patient"));
 	my $n_meas = int($q->param("meas"));
 	if (defined $n_kart and defined $n_terminal and defined $n_meas) {
-		my $sth = $dbh->prepare("select p_sp, p_dp, p_fp, p_time, p_fl_err, p_fl_a from $TABLE->{measurements} where n_terminal = $n_terminal and n_kart = $n_kart and n_meas = $n_meas order by measid");
+		my $sth = $dbh->prepare("select p_sp, p_dp, p_fp, p_time, p_fl_err, p_fl_a, measID from $TABLE->{measurements} where n_terminal = $n_terminal and n_kart = $n_kart and n_meas = $n_meas order by measid");
 		$sth->execute();
 		$result = $sth->fetchall_arrayref();
 	}
@@ -470,6 +470,53 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $sth2 = $dbh->prepare("insert into $TABLE->{terminals} (n_terminal, name_terminal, email_terminal) values (?, ?, ?)");
 	my $success = $sth2->execute($n, $q->param("name"), $q->param("email"));
 	$result = {id => $success ? $n : -1};
+
+} elsif ($query eq "artefact") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+	my $n = int($q->param("n"));
+	my $error = int($q->param("error")) ? '*' : ' ';
+
+	error("Access Denied") unless $USER eq "admin" or $USER_TERMINAL == $n_terminal;
+
+	my $sth = $dbh->prepare("update $TABLE->{measurements} SET p_fl_a = '$error' where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas and measID = $n");
+	my $success = $sth->execute();
+	$result = {success => $success ? 1 : 0};
+
+} elsif ($query eq "save_comment") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+	my $comment = $q->param("comment");
+
+	# error("Access Denied") unless $USER_TERMINAL == $n_terminal;
+	error("Access Denied") unless $USER eq "admin" or $USER_TERMINAL == $n_terminal;
+
+	my $sth = $dbh->prepare("update $TABLE->{sessions} SET coment = ? where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
+	my $success = $sth->execute($comment);
+	$result = {success => $success ? 1 : 0};
+
+} elsif ($query eq "save_conclusion") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+	my $conclusion = $q->param("conclusion");
+
+	error("Access Denied") unless $USER eq "admin";
+
+	my $sth = $dbh->prepare("update $TABLE->{sessions} SET diagnosis = ? where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
+	my $success = $sth->execute($conclusion);
+	$result = {success => $success ? 1 : 0};
 
 } else {
 

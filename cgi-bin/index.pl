@@ -69,6 +69,7 @@ my $loc = {
 	daily_index => ["Суточный индекс", "Daily index"],
 	morning_speed => ["Скорость утреннего повышения", "Morning increase speed"],
 	exit => ["Выход", "Exit"],
+	save => ["Сохранить", "Save"],
 };
 
 my $lang = CGI::http('Accept-language') =~ /^ru/ ? "ru" : "en";

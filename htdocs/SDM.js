@@ -23,12 +23,17 @@
 
 	var Analysis = new $.Class({
 
+		'extends': $.Eventable,
+
 		initialize: function(container) {
 			this.container = container;
 			this.abp_graph = new Graph(container);
 			this.list = new MeasList(this);
 			this.list.onEvent("hover", $.F(this.abp_graph, this.abp_graph.select));
-			this.list.onEvent("change", $.F(this, this.draw));
+			this.list.onEvent("artefact", $.F(this, function(n, error) {
+				this.draw();
+				this.event("artefact", n, error);
+			}));
 			this.abp_graph.onEvent("select", $.F(this.list, this.list.setActive));
 		},
 
@@ -43,7 +48,7 @@
 
 		load: function(data) {
 			var time_prev, days = 0;
-			this.systolic = [], this.diastolic = [], this.time = [], this.pulse = [], this.day = [], this.errors = [];
+			this.systolic = [], this.diastolic = [], this.time = [], this.pulse = [], this.day = [], this.errors = [], this.artefacts = [], this.ids = [];
 			this.analysis = null;
 			this.count = 0;
 			for (var i = 0; i < data.length; i++) {
@@ -52,14 +57,14 @@
 					measurement[j] = Number(measurement[j]);
 				}
 				// console.log(data[i]);
-				var error = ( measurement[4] == '*'
-					|| measurement[5] == '*'
+				var artefact = ( measurement[5] == '*'
 					|| measurement[0] == 0
 					|| measurement[1] == 0
 					|| measurement[0] < measurement[1]
 					|| measurement[0] > SAD_MAX || measurement[0] < SAD_MIN
 					|| measurement[1] > DAD_MAX || measurement[1] < DAD_MIN
 					|| measurement[2] > RATE_MAX || measurement[2] < RATE_MIN);
+				var error = measurement[4] == '*';
 				var time_meas = str2time(measurement[3]);
 				var hours = time_meas / 60 / 60 / 1000;
 				var is_day = hours >= NIGHT_TIME_END && hours <= NIGHT_TIME_START;
@@ -72,13 +77,15 @@
 				this.pulse.push(measurement[2]);
 				this.time.push(time_meas);
 				this.errors.push(error ? measurement[2] : null);
+				this.artefacts.push(artefact ? 1 : null);
+				this.ids.push(measurement[6]);
 				this.day.push(is_day);
 				this.count++;
 			}
 		},
 
 		draw: function() {
-			this.abp_graph.update(this.systolic, this.diastolic, this.time, this.pulse, this.errors);
+			this.abp_graph.update(this.systolic, this.diastolic, this.time, this.pulse, this.errors, this.artefacts);
 			this.abp_graph.plot();
 		},
 
@@ -120,7 +127,7 @@
 					data[key] = [];
 				});
 				for (var i = 0; i < this.systolic.length; i++) {
-					if (this.errors[i] != null)
+					if (this.errors[i] != null || this.artefacts[i] != null)
 						continue;
 					if (period == "day" && !this.day[i])
 						continue;
@@ -263,6 +270,7 @@
 					sys = dia = pulse = "-";
 				} else {
 					error = $.e("input", {type: "checkbox", n: i, onchange: function() { self.setError(Number(this.getAttribute("n")), this.checked) }});
+					error.checked = this.root.artefacts[i] ? true : null;
 					sys = String(this.root.systolic[i]);
 					dia = String(this.root.diastolic[i]);
 					pulse = String(this.root.pulse[i]);
@@ -287,8 +295,8 @@
 		},
 
 		setError: function(n, error) {
-			this.root.errors[n] = error ? 0 : null;
-			this.event("change");
+			this.root.artefacts[n] = error ? 0 : null;
+			this.event("artefact", this.root.ids[n], error);
 		},
 
 		setActive: function(n) {
@@ -584,7 +592,7 @@
 			this.abp_max = 0;
 			this.pulse_max = 0;
 			for (var i = 0; i < (this.systolic || []).length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				if (this.abp_max < this.systolic[i])
 					this.abp_max = this.systolic[i];
@@ -596,12 +604,13 @@
 			this.scale_pulse_y = (this.pulse_max - this.pulse_min) / (this.pulse_height - this.offset_title); // pixels per mm
 		},
 
-		update: function(systolic, diastolic, time, pulse, errors) {
+		update: function(systolic, diastolic, time, pulse, errors, artefacts) {
 			this.systolic = systolic;
 			this.diastolic = diastolic;
 			this.time = time;
 			this.pulse = pulse;
 			this.errors = errors;
+			this.artefacts = artefacts;
 			this.start_time = this.time[0];
 			this.end_time = this.time[this.time.length - 1];
 			this.resize();
@@ -743,7 +752,7 @@
 			// заливка
 			var index_prev = null;
 			for (var i = 0; i < this.systolic.length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				if (index_prev == null) {
 					index_prev = i;
@@ -775,7 +784,7 @@
 			this.ctx.strokeStyle = "#444444";
 			this.ctx.lineWidth = 2;
 			for (var i = 0; i < this.systolic.length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				var t = this.time[i];
 				var x = this.t2x(t);
@@ -792,7 +801,7 @@
 			this.ctx.strokeStyle = "#444444";
 			this.ctx.lineWidth = 2;
 			for (var i = 0; i < this.diastolic.length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				var t = this.time[i];
 				var x = this.t2x(t);
@@ -809,7 +818,7 @@
 			this.ctx.strokeStyle = "#444444";
 			this.ctx.lineWidth = 2;
 			for (var i = 0; i < this.pulse.length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				var t = this.time[i];
 				var x = this.t2x(t);
@@ -892,7 +901,7 @@
 			var day_time = day_intervals[0].type == "day";
 			var index_prev = null;
 			for (var i = 0; i < this.time.length; i++) {
-				if (this.errors[i] != null)
+				if (this.errors[i] != null || this.artefacts[i] != null)
 					continue;
 				if (index_prev == null) {
 					index_prev = i;
@@ -1138,6 +1147,24 @@
 					$.style(this.abp_iframe, {width: size.width - 340, height: size.height - 60});
 				}
 			}));
+			this.onEvent("save_comment", $.F(this, function() {
+				this.query({
+					query: "save_comment",
+					terminal: this.navigation.get("terminal"),
+					patient: this.navigation.get("patient"),
+					meas: this.navigation.get("meas"),
+					comment: $.$("abp_monitoring_comment").value
+				});
+			}));
+			this.onEvent("save_conclusion", $.F(this, function() {
+				this.query({
+					query: "save_conclusion",
+					terminal: this.navigation.get("terminal"),
+					patient: this.navigation.get("patient"),
+					meas: this.navigation.get("meas"),
+					conclusion: $.$("abp_monitoring_conclusion").value
+				});
+			}));
 
 			this.monitor_dispatcher_URL = "http://localhost:18345/";
 
@@ -1159,6 +1186,16 @@
 			this.list_view_enabled = true;
 			this.menus = {};
 			this.analysis = new Analysis($.$("abp_canvas"));
+			this.analysis.onEvent("artefact", $.F(this, function(n, error) {
+				this.query({
+					query: "artefact",
+					terminal: this.navigation.get("terminal"),
+					patient: this.navigation.get("patient"),
+					meas: this.navigation.get("meas"),
+					n: n,
+					error: error ? 1 : 0
+				});
+			}));
 			this.event("resize");
 			this.cache = new Cache();
 			this.navigation = new Navigation($.$("navigation"), {

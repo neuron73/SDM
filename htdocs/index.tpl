@@ -169,6 +169,8 @@
 				window.add_patient = 		$.F(UI, UI.event, ["add_patient"]);
 				window.card_monitoring_update =	$.F(UI, UI.event, ["card_monitoring_update"]);
 				window.update_analysis = 	$.F(UI, UI.event, ["update_analysis"]);
+				window.save_comment = $.F(UI, UI.event, ["save_comment"]);
+				window.save_conclusion = $.F(UI, UI.event, ["save_conclusion"]);
 
 				window.add_abp_measurement = function() {
 					var terminal = window.UI.navigation.get("terminal");
@@ -407,10 +409,14 @@
 														<div id="abp_comment" style="display:none; padding: 10px">
 															Комментарий врача:
 															<textarea id="abp_monitoring_comment" style="width: 100%; height: 300px;"></textarea>
+															<br />
+															<button onclick="save_comment()">[% save %]</button>
 														</div>
 														<div id="abp_conclusion" style="display:none; padding: 10px">
 															Заключение:
 															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 300px;"></textarea>
+															<br />
+															<button onclick="save_conclusion()">[% save %]</button>
 														</div>
 													</td>
 													<td valign="top">
