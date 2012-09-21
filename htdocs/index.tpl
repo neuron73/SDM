@@ -162,7 +162,8 @@
 					return Math.sqrt(sum_square_diff / (count - 1));
 				};
 
-				window.UI = new SDM.Interface("/cgi-bin/SDM/SDM.pl", "/cgi-bin/", "[% language %]");
+				window.loc = new SDM.Loc("[% language %]");
+				window.UI = new SDM.Interface("/cgi-bin/SDM/SDM.pl", "/cgi-bin/");
 
 				window.onresize = 		$.F(UI, UI.event, ["resize"]);
 				window.add_meas_callback = 	$.F(UI, UI.event, ["add_meas_callback"]);
@@ -171,6 +172,7 @@
 				window.update_analysis = 	$.F(UI, UI.event, ["update_analysis"]);
 				window.save_comment = $.F(UI, UI.event, ["save_comment"]);
 				window.save_conclusion = $.F(UI, UI.event, ["save_conclusion"]);
+				window.grade_update = $.F(UI, UI.event, ["grade_update"]);
 
 				window.add_abp_measurement = function() {
 					var terminal = window.UI.navigation.get("terminal");
@@ -189,57 +191,6 @@
 				window.toggle_auth = function(exit) {
 					$.toggle(!exit, "auth_user_name");
 					$.toggle(exit, "auth_user_logout");
-				}
-
-				window.grade_update = function() {
-					var types = {
-						diabetes: $.qw("diabetes"),														// СД - сахарный диабет
-						risk_factor: $.qw("diabetes cholesterol age parents smoking inactivity"),		// ФР - факторы риска
-						target_organ: $.qw("hypertrophy proteinuria atherosclerosis retina"),			// ПОМ - поражение органов-мишеней
-						clinical_conditions: $.qw("cerebrovascular cardio renal vascular retinopathy")	// АКС - ассоциированные клинические состояния
-					};
-					var risks = [
-						["низкий риск",			"#ffffff",	"black"],		// 0
-						["средний риск",		"#aa4400",	"white"],		// 1
-						["высокий риск",		"#ff0000",	"white"],		// 2
-						["очень высокий риск",	"#ff0000",	"white"],		// 3
-					];
-					var insult_risks = [
-						"менее 15%", 	// низкий риск
-						"15-20%",		// средний риск
-						"20-30%",		// высокий риск
-						"30% или выше"	// очень высокий риск
-					];
-					var grades = [	// Определение степени риска (из приказа №4 мин-ва здравоохранения от 24 янв 2003г "организация мед помощи больным с АГ")
-						null,		//										1-я степень АГ		2-я степень АГ		3-я степень АГ
-						[0, 1, 2],	// I. Нет ФР, ПОМ, АКС						низкий				средний				высокий
-						[1, 1, 3],	// II. 1-2 фактора риска (кроме СД)			средний				средний				оч.высокий
-						[2, 2, 3],	// III. 3 и более ФР или ПОМ или СД			высокий				высокий				оч.высокий
-						[3, 3, 3]	// IV. АКС									оч.высокий			оч.высокий			оч.высокий
-					];
-					var marked = {};
-					$.each(types, function(keys, type) {
-						marked[type] = 0;
-						$.every(keys, function(key) {
-							if ($.$("ah_" + key).checked)
-								marked[type]++;
-						});
-					});
-					var n_grade;
-					if (marked.clinical_conditions > 0)
-						n_grade = 4;
-					else if (marked.risk_factor + marked.target_organ >= 3 || marked.diabetes)
-						n_grade = 3;
-					else if (marked.risk_factor > 0 || marked.target_organ > 0)
-						n_grade = 2;
-					else
-						n_grade = 1;
-
-					var hypertension_grade = Math.max(0, Number($.$("hypertension_grade").value) - 4);
-					var risk_grade = grades[n_grade][hypertension_grade];
-					$.$("hypertension_risk").innerHTML = "&nbsp;" + risks[risk_grade][0] + "&nbsp;";
-					$.style("hypertension_risk", {backgroundColor: risks[risk_grade][1], color: risks[risk_grade][2]});
-					$.$("insult_risk").innerHTML = insult_risks[risk_grade];
 				}
 
 				window.onload = function() {
@@ -311,6 +262,7 @@
 																			<option value="day">[% day %]</option>
 																			<option value="night">[% night %]</option>
 																		</select>
+<br />
 																	</td>
 																	<td>
 																		<div id="abp_analyze_table1" style="margin: 0px 0px 5px"></div>
@@ -319,7 +271,7 @@
 																<tr>
 																	<td>&nbsp;</td>
 																	<td>
-																		<table border="1" cellpadding="5" cellspacing="0" width="700">
+																		<table border="1" cellpadding="5" cellspacing="0" width="580" class="analysis">
 																			<tr>
 																				<td rowspan="2">&nbsp;</td>
 																				<td align="center" colspan="2">[% systolic_abp %]</td>
@@ -408,13 +360,13 @@
 														</div>
 														<div id="abp_comment" style="display:none; padding: 10px">
 															Комментарий врача:
-															<textarea id="abp_monitoring_comment" style="width: 100%; height: 300px;"></textarea>
+															<textarea id="abp_monitoring_comment" style="width: 100%; height: 385px;"></textarea>
 															<br />
 															<button onclick="save_comment()">[% save %]</button>
 														</div>
 														<div id="abp_conclusion" style="display:none; padding: 10px">
 															Заключение:
-															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 300px;"></textarea>
+															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 385px;"></textarea>
 															<br />
 															<button onclick="save_conclusion()">[% save %]</button>
 														</div>
@@ -441,62 +393,62 @@
 										card_history
 									</div>
 									<div id="card_diagnosis" style="display: none; padding: 20px;">
-										Степень артериальной гипертензии:
+										[% hypertension_grade %]:
 										<select id="hypertension_grade" onchange="grade_update()">
-											<option value="0">Не определена</option>
-											<option value="1">Оптимальное АД (АДс до 120 мм рт.ст.)</option>
-											<option value="2">Нормальное АД (АДс до 130 мм рт.ст.)</option>
-											<option value="3">Высокое нормальное АД (АДс до 140 мм рт.ст.)</option>
-											<option value="4">Артериальная гипертензия 1 степени (АДс до 160 мм рт.ст.)</option>
-											<option value="5">Артериальная гипертензия 2 степени (АДс до 180 мм рт.ст.)</option>
-											<option value="6">Артериальная гипертензия 3 степени (АДс выше 180 мм рт.ст.)</option>
+											<option value="0">[% hg_not_defined %]</option>
+											<option value="1">[% hg_optimal %]</option>
+											<option value="2">[% hg_normal %]</option>
+											<option value="3">[% hg_high %]</option>
+											<option value="4">[% hg_grade1 %]</option>
+											<option value="5">[% hg_grade2 %]</option>
+											<option value="6">[% hg_grade3 %]</option>
 										</select>
 										<br />
 										<br />
-										<b>Сопутствующие клинические состояния:</b>
+										<b>[% clinical_conditions %]:</b>
 										<hr />
-										<input type="checkbox" onchange="grade_update()" id="ah_cerebrovascular">Цереброваскулярные заболевания (ишемический инсульт, геморрагический инсульт, транзиторная ишемическая атака)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_cerebrovascular">[% diag_cerebrovascular %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_cardio">Заболевания сердца (инфаркт миокарда, стенокардия, коронарная реваскуляризация, сердечная недостаточность)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_cardio">[% diag_cardio %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_renal">Заболевания почек (диабетическая нефропатия, почечная недостаточность(креатининемия &gt; 2.0 мг/дл))</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_renal">[% diag_renal %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_vascular">Сосудистые заболевания (расслаивающая аневризма аорты, систематическое поражение периферических артерий)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_vascular">[% diag_vascular %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_retinopathy">Гипертоническая ретинопатия (геморрагии или экссудаты, отек соска зрительного нерва)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_retinopathy">[% diag_retinopathy %]</input>
 										<br />
 										<br />
-										<b>Поражение органов-мишеней:</b>
+										<b>[% target_organ %]:</b>
 										<hr />
-										<input type="checkbox" onchange="grade_update()" id="ah_hypertrophy">Гипертрофия левого желудочка (ЭКГ, ЭХОКГ или рентгенография)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_hypertrophy">[% diag_hypertrophy %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_proteinuria">Протеинурия и/или гиперкреатинемия (1.2 - 2.0 мг/дл)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_proteinuria">[% diag_proteinuria %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_atherosclerosis">Ультразвуковые или рентгенологические признаки атеросклеротической бляшки</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_atherosclerosis">[% diag_atherosclerosis %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_retina">Генерализованное или очаговое сужение артерий сетчатки</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_retina">[% diag_retina %]</input>
 										<br />
 										<br />
-										<b>Факторы риска:</b>
+										<b>[% risk_factors %]:</b>
 										<hr />
-										<input type="checkbox" onchange="grade_update()" id="ah_diabetes">Сахарный диабет</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_diabetes">[% diag_diabetes %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_cholesterol">Повышенный / пониженный холестерин</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_cholesterol">[% diag_cholesterol %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_age">Возраст (мужчины &gt; 55 лет, женщины &gt; 65 лет)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_age">[% diag_age %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_parents">Наличие у родителей инфаркта миокарда либо мозгового инсульта (у мужчин &lt; 55 лет, у женщин &lt; 65 лет)</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_parents">[% diag_parents %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_smoking">Курение</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_smoking">[% diag_smoking %]</input>
 										<br />
-										<input type="checkbox" onchange="grade_update()" id="ah_inactivity">Малоподвижной образ жизни</input>
+										<input type="checkbox" onchange="grade_update()" id="ah_inactivity">[% diag_inactivity %]</input>
 
 										<br>
 										<br>
 										<hr />
 
-										<b>Степень риска: <span id="hypertension_risk">&nbsp;низкий риск&nbsp;</span></b> <br />
-										Риск инсульта или инфаркта миокарда в ближайшие 10 лет: <span id="insult_risk">менее 15%</span>
+										<b>[% risk_grade %]: <span id="hypertension_risk"></span></b> <br />
+										[% insult_risk %]: <span id="insult_risk"></span>
 									</div>
 									<div id="card_monitor" style="display: none; padding: 0px 20px;">
 										<div>

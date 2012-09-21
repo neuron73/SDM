@@ -7,8 +7,6 @@
 		return (Number(str[0]) * 60 + Number(str[1])) * 60 * 1000;
 	};
 
-	var loc;
-
 	var SAD_MIN = 50;
 	var SAD_MAX = 300;
 	var DAD_MIN = 35;
@@ -1063,8 +1061,7 @@
 
 		'extends': $.Eventable,
 
-		initialize: function(backend, cgi_bin, language) {
-			loc = new Loc(language);
+		initialize: function(backend, cgi_bin) {
 			this.backend = backend;
 			this.cgi_bin = cgi_bin;
 			this.onEvent("add_meas_update", $.F(this, this.add_meas_update));
@@ -1165,6 +1162,7 @@
 					conclusion: $.$("abp_monitoring_conclusion").value
 				});
 			}));
+			this.onEvent("grade_update", $.F(this, this.grade_update));
 
 			this.monitor_dispatcher_URL = "http://localhost:18345/";
 
@@ -1172,6 +1170,57 @@
 				window.addEventListener("message", $.F(this, this.monitor_listener), false);
 			else
 				window.attachEvent("onmessage", $.F(this, this.monitor_listener));
+		},
+
+		grade_update: function() {
+			var types = {
+				diabetes: $.qw("diabetes"),														// СД - сахарный диабет
+				risk_factor: $.qw("diabetes cholesterol age parents smoking inactivity"),		// ФР - факторы риска
+				target_organ: $.qw("hypertrophy proteinuria atherosclerosis retina"),			// ПОМ - поражение органов-мишеней
+				clinical_conditions: $.qw("cerebrovascular cardio renal vascular retinopathy")	// АКС - ассоциированные клинические состояния
+			};
+			var risks = [
+				[loc.low_risk,			"#ffffff",	"black"],		// 0
+				[loc.average_risk,		"#aa4400",	"white"],		// 1
+				[loc.high_risk,			"#ff0000",	"white"],		// 2
+				[loc.very_high_risk,	"#ff0000",	"white"],		// 3
+			];
+			var insult_risks = [
+				loc.risk_lt15, 		// низкий риск
+				loc.risk_15_20,		// средний риск
+				loc.risk_20_30,		// высокий риск
+				loc.risk_gt30		// очень высокий риск
+			];
+			var grades = [	// Определение степени риска (из приказа №4 мин-ва здравоохранения от 24 янв 2003г "организация мед помощи больным с АГ")
+				null,		//										1-я степень АГ		2-я степень АГ		3-я степень АГ
+				[0, 1, 2],	// I. Нет ФР, ПОМ, АКС						низкий				средний				высокий
+				[1, 1, 3],	// II. 1-2 фактора риска (кроме СД)			средний				средний				оч.высокий
+				[2, 2, 3],	// III. 3 и более ФР или ПОМ или СД			высокий				высокий				оч.высокий
+				[3, 3, 3]	// IV. АКС									оч.высокий			оч.высокий			оч.высокий
+			];
+			var marked = {};
+			$.each(types, function(keys, type) {
+				marked[type] = 0;
+				$.every(keys, function(key) {
+					if ($.$("ah_" + key).checked)
+						marked[type]++;
+				});
+			});
+			var n_grade;
+			if (marked.clinical_conditions > 0)
+				n_grade = 4;
+			else if (marked.risk_factor + marked.target_organ >= 3 || marked.diabetes)
+				n_grade = 3;
+			else if (marked.risk_factor > 0 || marked.target_organ > 0)
+				n_grade = 2;
+			else
+				n_grade = 1;
+
+			var hypertension_grade = Math.max(0, Number($.$("hypertension_grade").value) - 4);
+			var risk_grade = grades[n_grade][hypertension_grade];
+			$.$("hypertension_risk").innerHTML = "&nbsp;" + risks[risk_grade][0] + "&nbsp;";
+			$.style("hypertension_risk", {backgroundColor: risks[risk_grade][1], color: risks[risk_grade][2]});
+			$.$("insult_risk").innerHTML = insult_risks[risk_grade];
 		},
 
 		add_meas_update: function() {
@@ -1438,6 +1487,9 @@
 						this.menus.measurements[type].update(items[type]);
 					}, this);
 
+					// TODO: load diagnosis
+					this.grade_update();
+
 					$.show("card");
 					this.block_main("card");
 				} else {
@@ -1526,7 +1578,7 @@
 
 			var table = $.table.apply($, rows);
 			table.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
-			table.width = 700;
+			table.width = 580;
 			table.cellPadding = 5;
 			table.border = 1;
 			$.clear("abp_analyze_table1").appendChild(table);
@@ -1764,9 +1816,9 @@
 			var rows = [];
 			$.every(measlist, function(meas) {
 				if (meas && meas.type == "АД") {
-					var title = "суточное мониторирование СМАД #" + meas.id;
+					var title = loc.SMAD + meas.id;
 					var href = "#terminal:" + this.navigation.get("terminal") + ",patient:" + this.navigation.get("patient") + ",meas:" + meas.id;
-					rows.push([meas.date, $.div("Проведено ", $.e("a", {href: href}, title))]);
+					rows.push([meas.date, $.div(loc.added, $.e("a", {href: href}, title))]);
 				}
 			}, this);
 			$.inject($.clear("card_history"), $.table.apply($, rows).format(null, [{width: 100}]));
@@ -1931,6 +1983,16 @@
 			read_error2: ["Ошибка чтения данных", "Data read error"],
 			prog_error: ["Ошибка при программировании монитора!", "Programming error"],
 			prog_success: ["Программирование завершено", "Programming complete"],
+			low_risk: ["низкий риск", "low risk"],
+			average_risk: ["средний риск", "average risk"],
+			high_risk: ["высокий риск", "high risk"],
+			very_high_risk: ["очень высокий риск", "very high risk"],
+			risk_lt15: ["менее 15%", "less than 15%"],
+			risk_15_20: ["15-20%", "15-20%"],
+			risk_20_30: ["20-30%", "20-30%"],
+			risk_gt30: ["30% или выше", "greater than 30%"],
+			added: ["Проведено ", "Added "],
+			SMAD: ["суточное мониторирование СМАД #", "daily monitoring #"],
 		}
 
 	});
@@ -1941,6 +2003,7 @@
 	exports.Navigation = Navigation;
 	exports.Cache = Cache;
 	exports.Graph = Graph;
+	exports.Loc = Loc;
 
 })();
 
