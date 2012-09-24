@@ -97,6 +97,11 @@
 				background-color: white !important;
 			}
 
+			textarea.disabled {
+				border: 1px solid gray !important;
+				margin: 1px !important;
+			}
+
 			input.empty {
 				background-color: #f8f8f8;
 			}
@@ -362,13 +367,13 @@
 															Комментарий врача:
 															<textarea id="abp_monitoring_comment" style="width: 100%; height: 385px;"></textarea>
 															<br />
-															<button onclick="save_comment()">[% save %]</button>
+															<button id="abp_monitoring_comment_save" onclick="save_comment()">[% save %]</button>
 														</div>
 														<div id="abp_conclusion" style="display:none; padding: 10px">
 															Заключение:
 															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 385px;"></textarea>
 															<br />
-															<button onclick="save_conclusion()">[% save %]</button>
+															<button id="abp_monitoring_conclusion_save" onclick="save_conclusion()">[% save %]</button>
 														</div>
 													</td>
 													<td valign="top">
@@ -395,13 +400,13 @@
 									<div id="card_diagnosis" style="display: none; padding: 20px;">
 										[% hypertension_grade %]:
 										<select id="hypertension_grade" onchange="grade_update()">
-											<option value="0">[% hg_not_defined %]</option>
-											<option value="1">[% hg_optimal %]</option>
-											<option value="2">[% hg_normal %]</option>
-											<option value="3">[% hg_high %]</option>
-											<option value="4">[% hg_grade1 %]</option>
-											<option value="5">[% hg_grade2 %]</option>
-											<option value="6">[% hg_grade3 %]</option>
+											<option value="-1">[% hg_not_defined %]</option>
+											<option value="0">[% hg_optimal %]</option>
+											<option value="1">[% hg_normal %]</option>
+											<option value="2">[% hg_high %]</option>
+											<option value="3">[% hg_grade1 %]</option>
+											<option value="4">[% hg_grade2 %]</option>
+											<option value="5">[% hg_grade3 %]</option>
 										</select>
 										<br />
 										<br />

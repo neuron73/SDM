@@ -496,8 +496,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $n_meas = int($q->param("meas"));
 	my $comment = $q->param("comment");
 
-	# error("Access Denied") unless $USER_TERMINAL == $n_terminal;
-	error("Access Denied") unless $USER eq "admin" or $USER_TERMINAL == $n_terminal;
+	error("Access Denied") unless $USER_TERMINAL == $n_terminal;
 
 	my $sth = $dbh->prepare("update $TABLE->{sessions} SET coment = ? where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
 	my $success = $sth->execute($comment);

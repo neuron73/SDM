@@ -7,6 +7,8 @@
 		return (Number(str[0]) * 60 + Number(str[1])) * 60 * 1000;
 	};
 
+	var AUTH;
+
 	var SAD_MIN = 50;
 	var SAD_MAX = 300;
 	var DAD_MIN = 35;
@@ -409,7 +411,9 @@
 
 		chroot: function(terminal_id) {
 			this.root = terminal_id;
-			// TODO
+			this.check();
+			if (this.sections[0] && (this.sections[0].id != terminal_id))
+				this.go("#terminal:" + terminal_id);
 		},
 
 		draw: function() {
@@ -1255,18 +1259,19 @@
 				panel: $.F(this, this.open_meas_panel)
 			}, this.cache);
 
-			var AUTH = this.query({query: "auth"});
+			AUTH = this.query({query: "auth"});
 			var name = AUTH.user == "admin" ? loc.admin : loc.terminal + AUTH.user.match(/(\d+)$/)[1];
 			$.$("auth_user_name").innerHTML = name;
 			if (AUTH.user != "admin")
 				$.hide("tab_terminals");
 			this.show_terminals();
 
+			this.navigation.init();
+
 			var m;
 			if (m = AUTH.user.match(/terminal(\d+)$/)) {
 				this.navigation.chroot(Number(m[1]));
 			}
-			this.navigation.init();
 		},
 
 		logout: function() {
@@ -1615,8 +1620,33 @@
 						});
 						container.appendChild(this.ecg_iframe);
 					} else if (meas.type == "АД") {
-						$.$("abp_monitoring_comment").value = meas.comment;
-						$.$("abp_monitoring_conclusion").value = meas.diagnosis;
+						var comment = $.$("abp_monitoring_comment");
+						var conclusion = $.$("abp_monitoring_conclusion");
+						var comment_save = $.$("abp_monitoring_comment_save");
+						var conclusion_save = $.$("abp_monitoring_conclusion_save");
+
+						if (AUTH.user == "admin") {
+							comment.setAttribute("readonly", true);
+							comment.className = "disabled";
+							$.hide(comment_save);
+						} else {
+							comment.removeAttribute("readonly");
+							comment.className = null;
+							$.show(comment_save);
+						}
+						comment.value = meas.comment;
+
+						if (AUTH.user != "admin") {
+							conclusion.setAttribute("readonly", true);
+							conclusion.className = "disabled";
+							$.hide(conclusion_save);
+						} else {
+							conclusion.removeAttribute("readonly");
+							conclusion.className = null;
+							$.show(conclusion_save);
+						}
+						conclusion.value = meas.diagnosis;
+
 						this.analysis.load(measdata);
 						this.analysis.drawList($.$("abp_meas_list"));
 						this.analysis.draw();
@@ -1764,20 +1794,19 @@
 						info = this.query({query: "patient", terminal: path.terminal, patient: path.patient});
 						this.cache.add("patient_diagnosis", args, info);
 					}
+					$.$("hypertension_grade").value = info.stepen_ag;
+/*
 					var fields = [
 						["Сопутствующие заболевания", "soput_zab", 0],
 						["Сахарный диабет", "sah_diabet", 0],
 						["Поражение органов мишеней", "por_org_mish", 0],
 						["Факторы риска", "f_riska", 0],
-						/*
 						["Употребление алкоголя", "", 0],
 						["Курение", "", 0],
 						["Холестерин", "", 0],
 						["Уровень стрессов", "", 0],
 						["Физическая активность", "", 0],
-						*/
 					];
-/*
 					var container = $.clear("card_diagnosis");
 					var rows = [];
 					var chomp = function(s) {
@@ -1819,9 +1848,14 @@
 					var title = loc.SMAD + meas.id;
 					var href = "#terminal:" + this.navigation.get("terminal") + ",patient:" + this.navigation.get("patient") + ",meas:" + meas.id;
 					rows.push([meas.date, $.div(loc.added, $.e("a", {href: href}, title))]);
+					if (meas.diagnosis) {
+						rows.push([meas.date, $.div(loc.card_conclusion + meas.id + ":", $.div(meas.diagnosis), $.e("br"))]);
+					}
 				}
 			}, this);
-			$.inject($.clear("card_history"), $.table.apply($, rows).format(null, [{width: 100}]));
+			var table = $.table.apply($, rows);
+			table.cellSpacing = 5;
+			$.inject($.clear("card_history"), table.format([{verticalAlign: "top", width: 100}]));
 		},
 
 		block_main: function(block) {
@@ -1993,6 +2027,7 @@
 			risk_gt30: ["30% или выше", "greater than 30%"],
 			added: ["Проведено ", "Added "],
 			SMAD: ["суточное мониторирование СМАД #", "daily monitoring #"],
+			card_conclusion: ["Заключение по суточному мониторированию СМАД #", "Daily monitoring conclusion #"],
 		}
 
 	});
