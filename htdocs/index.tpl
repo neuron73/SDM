@@ -114,6 +114,19 @@
 				padding: 3px 25px;
 				margin: 2px 0px;
 			}
+
+			table.report {
+				width: 800px;
+				border-top: 1px solid black;
+				border-left: 1px solid black;
+			}
+
+			table.report td {
+				vertical-align: top;
+				padding: 3px 10px;
+				border-bottom: 1px solid black;
+				border-right: 1px solid black;
+			}
 		</style>
 		<script>
 			(function() {
@@ -210,7 +223,7 @@
 	<body>
 		<table id="main" cellpadding="0" cellspacing="0">
 			<tr>
-				<td colspan="4" style="height: 30px">
+				<td id="header" colspan="4" style="height: 30px">
 					<table class="navigation" width="100%" cellpadding="0" cellspacing="0">
 						<tr>
 							<td>
@@ -234,7 +247,7 @@
 							<td valign="top" id="tab_patients">
 								<div id="patients"></div>
 							</td>
-							<td valign="top" style="border-right: 1px solid gray">
+							<td valign="top" id="tab_menu" style="border-right: 1px solid gray">
 								<div id="card" style="display: none">
 									<div id="patient_name" style="display: none"></div>
 									<div id="card_menu" style="padding: 10px 0px 20px; border-bottom: 1px solid gray; margin-bottom: 15px"></div>
@@ -276,6 +289,7 @@
 																<tr>
 																	<td>&nbsp;</td>
 																	<td>
+																		<div id="abp_analyze_table2" style="margin: 0px 0px 5px"></div>
 																		<table border="1" cellpadding="5" cellspacing="0" width="580" class="analysis">
 																			<tr>
 																				<td rowspan="2">&nbsp;</td>
@@ -374,6 +388,77 @@
 															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 385px;"></textarea>
 															<br />
 															<button id="abp_monitoring_conclusion_save" onclick="save_conclusion()">[% save %]</button>
+														</div>
+														<div id="abp_report" style="display:none; padding: 10px">
+															<h2>Результаты суточного мониторирования АД</h2>
+															<table class="report" cellspacing="0" cellpadding="0">
+																<tr>
+																	<td style="width:300px">№ карточки</td>
+																	<td id="report_n"></td>
+																</tr>
+																<tr>
+																	<td>Пациент</td>
+																	<td id="report_patient"></td>
+																</tr>
+																<tr>
+																	<td>Пол</td>
+																	<td id="report_sex"></td>
+																</tr>
+																<tr>
+																	<td>Дата рождения</td>
+																	<td id="report_dob"></td>
+																</tr>
+																<tr>
+																	<td>Дата мониторирования</td>
+																	<td id="report_meas_date"></td>
+																</tr>
+																<tr>
+																	<td>Возраст</td>
+																	<td id="report_age"></td>
+																</tr>
+																<tr>
+																	<td>Вес</td>
+																	<td id="report_weight"></td>
+																</tr>
+																<tr>
+																	<td>Рост</td>
+																	<td id="report_height"></td>
+																</tr>
+																<tr>
+																	<td>Индекс массы тела</td>
+																	<td id="report_weight_index"></td>
+																</tr>
+																<tr>
+																	<td>Окружность талии</td>
+																	<td id="report_waist"></td>
+																</tr>
+																<tr>
+																	<td>Окружность бедер</td>
+																	<td id="report_hip"></td>
+																</tr>
+																<tr>
+																	<td>Индекс "талия-бедро"</td>
+																	<td id="report_hip_waist_index"></td>
+																</tr>
+																<tr>
+																	<td>АДС, мм. рт. ст.</td>
+																	<td id="report_abps"></td>
+																</tr>
+																<tr>
+																	<td>АДД, мм. рт. ст.</td>
+																	<td id="report_abpd"></td>
+																</tr>
+																<tr>
+																	<td>ЧСС, уд./мин.</td>
+																	<td id="report_rate"></td>
+																</tr>
+																<tr>
+																	<td>Комментарий к измерению</td>
+																	<td id="report_comment"></td>
+																</tr>
+															</table>
+															<div id="report_analysis"></div>
+															<canvas id="report_canvas" width="500" height="500"></canvas>
 														</div>
 													</td>
 													<td valign="top">

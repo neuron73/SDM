@@ -26,8 +26,12 @@
 		'extends': $.Eventable,
 
 		initialize: function(container) {
+			var self = this;
 			this.container = container;
 			this.abp_graph = new Graph(container);
+			container.onmousemove = function(e) {
+				self.abp_graph.on_mouse_move(e);
+			};
 			this.list = new MeasList(this);
 			this.list.onEvent("hover", $.F(this.abp_graph, this.abp_graph.select));
 			this.list.onEvent("artefact", $.F(this, function(n, error) {
@@ -48,7 +52,7 @@
 
 		load: function(data) {
 			var time_prev, days = 0;
-			this.systolic = [], this.diastolic = [], this.time = [], this.pulse = [], this.day = [], this.errors = [], this.artefacts = [], this.ids = [];
+			this.systolic = [], this.diastolic = [], this.time_s = [], this.time = [], this.pulse = [], this.day = [], this.errors = [], this.artefacts = [], this.ids = [];
 			this.analysis = null;
 			this.count = 0;
 			for (var i = 0; i < data.length; i++) {
@@ -65,6 +69,7 @@
 					|| measurement[1] > DAD_MAX || measurement[1] < DAD_MIN
 					|| measurement[2] > RATE_MAX || measurement[2] < RATE_MIN);
 				var error = measurement[4] == '*';
+				this.time_s.push(measurement[3]);
 				var time_meas = str2time(measurement[3]);
 				var hours = time_meas / 60 / 60 / 1000;
 				var is_day = hours >= NIGHT_TIME_END && hours <= NIGHT_TIME_START;
@@ -150,6 +155,8 @@
 					data.double_product[i] = this.systolic[i] * this.pulse[i] / 100;
 				}
 
+				analysis.data = data;
+
 				$.each(keys, function(key) {
 					var values = $.grep(null, data[key]);
 					analysis[key] = {};
@@ -157,6 +164,54 @@
 					analysis[key].max = format(Math.vector.max(values));
 					analysis[key].mean = format(Math.mean(values));
 					analysis[key].std = format(Math.std(values), 1);
+				}, this);
+
+				// Индекс времени, индекс площади
+				analysis.blood_pressure_load = {};
+				analysis.area_under_curve = {};
+
+				var keys2 = ["systolic", "diastolic"];
+				var keys3 = ["hyper", "hypo"];
+
+				$.every(keys2, function(key2) {
+					analysis.blood_pressure_load[key2] = {};
+					analysis.area_under_curve[key2] = {};
+
+					$.every(keys3, function(key3) {
+						var intervals = this.abp_graph.area_under_curve[key2 + '_' + key3];
+						var filter = period == "day" ? {day: {$eq: true}} : (period == "night" ? {day: {$eq: false}} : null);
+						intervals = $.grep(filter, intervals);
+						var area_under_curve = 0; // Индекс площади
+						var blood_pressure_load = 0; // Индекс времени
+						var duration = (intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60;
+						$.every(intervals, function(interval) {
+							var points = interval.polygon;
+							var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
+							if (points) {
+								// console.log(interval);
+								var area;
+								var under = key2 == "systolic";
+								if (points.length == 3) { //площадь треугольника
+									var _ = points, bottom_left = _[0], bottom_right = _[1], top = _[2];
+									var y_top = top[1];
+									var y_bottom = bottom_left[1];
+									area = width * Math.abs(y_top - y_bottom) / 2;
+								} else if (points.length == 4) { // площадь четырехугольника
+									var _ = points, bottom_left = _[0], bottom_right = _[1], top_right = _[2], top_left = _[3];
+									var y0 = bottom_left[1]; // граница
+									var y_min = Math.min(top_left[1], top_right[1]);
+									var y_max = Math.max(top_left[1], top_right[1]);
+									var y1 = under ? y_min : y_max;
+									var y2 = under ? y_max : y_min;
+									area = width * Math.abs(y1 - y0) + width * Math.abs(y2 - 1) / 2;
+								}
+								blood_pressure_load += width;
+								area_under_curve += area;
+							}
+						});
+						analysis.blood_pressure_load[key2][key3] = format(100 * blood_pressure_load / duration, 1);
+						analysis.area_under_curve[key2][key3] = format(area_under_curve, 1);
+					}, this);
 				}, this);
 				return analysis;
 			});
@@ -170,14 +225,9 @@
 			var keys = ["systolic", "diastolic"];
 			this.analysis.day_index = {};
 			this.analysis.speed = {};
-			this.analysis.blood_pressure_load = {};
-			this.analysis.area_under_curve = {};
 
 			for (var k in keys) {
 				var key = keys[k];
-
-				this.analysis.blood_pressure_load[key] = {};
-				this.analysis.area_under_curve[key] = {};
 
 				// минимальное и максимальное давление за специальный период (4:00 - 10:00)
 				var t_max = null, t_min = null, min = null, max = null;
@@ -205,42 +255,6 @@
 				this.analysis.speed[key] = (t_max != null && t_min != null && t_max > t_min)
 					? format((max - min) / (t_max - t_min), 1)
 					: null;
-
-				// Индекс времени, индекс площади
-				var keys2 = ["hyper", "hypo"];
-				$.every(keys2, function(key2) {
-					var intervals = this.abp_graph.area_under_curve[key + '_' + key2];
-					var area_under_curve = 0; // Индекс площади
-					var blood_pressure_load = 0; // Индекс времени
-					var duration = (intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60;
-					$.every(intervals, function(interval) {
-						var points = interval.polygon;
-						var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
-						if (points) {
-							// console.log(interval);
-							var area;
-							var under = key == "systolic";
-							if (points.length == 3) { //площадь треугольника
-								var _ = points, bottom_left = _[0], bottom_right = _[1], top = _[2];
-								var y_top = top[1];
-								var y_bottom = bottom_left[1];
-								area = width * Math.abs(y_top - y_bottom) / 2;
-							} else if (points.length == 4) { // площадь четырехугольника
-								var _ = points, bottom_left = _[0], bottom_right = _[1], top_right = _[2], top_left = _[3];
-								var y0 = bottom_left[1]; // граница
-								var y_min = Math.min(top_left[1], top_right[1]);
-								var y_max = Math.max(top_left[1], top_right[1]);
-								var y1 = under ? y_min : y_max;
-								var y2 = under ? y_max : y_min;
-								area = width * Math.abs(y1 - y0) + width * Math.abs(y2 - 1) / 2;
-							}
-							blood_pressure_load += width;
-							area_under_curve += area;
-						}
-					});
-					this.analysis.blood_pressure_load[key][key2] = format(100 * blood_pressure_load / duration, 1);
-					this.analysis.area_under_curve[key][key2] = format(area_under_curve, 1);
-				}, this);
 			}
 			// console.log(this.analysis);
 			return this.analysis;
@@ -540,9 +554,6 @@
 		initialize: function(canvas) {
 			var self = this;
 			this.canvas = canvas;
-			this.canvas.onmousemove = function(e) {
-				self.on_mouse_move(e);
-			};
 			this.ctx = canvas.getContext("2d");
 			this.offset_x = 65;
 			this.offset_top = 0;
@@ -558,7 +569,7 @@
 		on_mouse_move: function(e) {
 			var time = this.x2t(e.clientX - this.canvas_offset.left);
 			var i;
-			for(i = 0; i < this.time.length - 1; i++) {
+			for (i = 0; i < this.time.length - 1; i++) {
 				if (time < this.time[i])
 					break;
 			}
@@ -917,7 +928,8 @@
 						to: time_change,
 						from_value: data[index_prev],
 						to_value: value,
-						threshold: day_time ? border_day : border_night
+						threshold: day_time ? border_day : border_night,
+						day: day_time
 					});
 					day_time = !day_time;
 					intervals.push({
@@ -925,7 +937,8 @@
 						to: this.time[i],
 						from_value: value,
 						to_value: data[i],
-						threshold: day_time ? border_day : border_night
+						threshold: day_time ? border_day : border_night,
+						day: day_time
 					});
 				} else {
 					intervals.push({
@@ -933,7 +946,8 @@
 						to: this.time[i],
 						from_value: data[index_prev],
 						to_value: data[i],
-						threshold: day_time ? border_day : border_night
+						threshold: day_time ? border_day : border_night,
+						day: day_time
 					});
 				}
 				index_prev = i;
@@ -1124,7 +1138,7 @@
 				$.$("card_monitor_passive_start").innerHTML = NIGHT_TIME_START + ":00";
 				$.$("card_monitor_passive_end").innerHTML = NIGHT_TIME_END + ":00";
 			}));
-			this.onEvent("update_analysis", $.F(this, this.draw_analysis));
+			this.onEvent("update_analysis", $.F(this, this.draw_analysis, ["abp_analyze_table1"]));
 			this.onEvent("resize", $.F(this, function() {
 				var left_menu_width = 300;
 				var meas_list_width = 300;
@@ -1136,6 +1150,7 @@
 				$.style("patients", {height: (size.height - 50) + "px"});
 				$.$("card").style.width = left_menu_width + "px";
 				$.$("abp_meas_list").style.height = (size.height - 60) + "px";
+				$.$("tab_menu").style.height = (size.height - 40) + "px";
 				$.$("abp_analyze").style.width = (size.width - meas_list_width - left_menu_width - padding) + "px";
 				$.$("abp_monitoring").style.width = $.$("abp_comment").style.width = $.$("abp_conclusion").style.width = (size.width - left_menu_width  - meas_list_width - 40) + "px";
 				if (this.analysis) {
@@ -1456,8 +1471,11 @@
 						[loc.analysis, "analyze"],
 						[loc.conditions, "monitoring"],
 						[loc.comment, "comment"],
-						[loc.conclusion, "conclusion"]
+						[loc.conclusion, "conclusion"],
+						[loc.report, "report"],
+						// [this.monitoring_report_link = $.e("a", {_target: "blank", onclick: $.F(this, this.open_monitoring_report)}, loc.report), "report"]
 					]);
+
 					meas_submenu["ИАД"] = $.div();
 					meas_submenu["ЭКГ"] = $.div();
 
@@ -1543,28 +1561,104 @@
 		open_meas_panel: function(item, path) {
 			try {
 				this.panel = item && item.id;
-				if (item) {
-					if (item.id == "analyze")
-						this.draw_analysis();
+				if (this.panel == "report") {
+					this.generate_report($.$("abp_report"), path);
+					$.hide("tab_menu");
+					$.$("header").style.display = "none";
+					$.hide("abp_meas_list");
+					$.hide("abp_canvas");
+					$.show("abp_report");
+				} else {
+					$.show("tab_menu");
+					$.$("header").style.display = "inline";
+					$.show("abp_meas_list");
+					$.show("abp_canvas");
+					$.hide("abp_report");
+
+					if (item) {
+						if (item.id == "analyze")
+							this.draw_analysis("abp_analyze_table1");
+					}
 				}
-				// $.toggle(item != "monitoring", "abp_canvas");
-				// $.toggle(item != "monitoring", "abp_meas_list");
+
 				$.toggle(item != null && item.id == "analyze", "abp_analyze");
 				$.toggle(item != null && item.id == "monitoring", "abp_monitoring");
 				$.toggle(item != null && item.id == "comment", "abp_comment");
 				$.toggle(item != null && item.id == "conclusion", "abp_conclusion");
+
 				this.event("resize");
 			} catch(e) {
 				$.error("open meas panel error: %e", e);
 			}
 		},
 
-		draw_analysis: function() {
+		generate_report: function(container, path) {
+			var info = this.get_patient_info(path.terminal, path.patient);
+			// console.log(info);
+			var report = {
+				n: path.patient,
+				patient: info.name + " " + info.surname + " " + info.family,
+				sex: info.sex ? (info.sex == 1 ? "мужской" : "женский") : "",
+				dob: info.burthday,
+				weight: info.ves,
+				height: info.rost,
+				age: 0,
+				hip: info.bedro,
+				waist: info.talia,
+				hip_waist_index: 0,
+				comment: info.coment,
+			};
+			$.each(report, function(value, key) {
+				$.$("report_" + key).innerHTML = $.utf8.decode(value);
+			});
+			this.draw_analysis("report_analysis", true);
+
+			var report_graph = new Graph($.$("report_canvas"));
+			report_graph.resize(800, 700);
+			report_graph.update(this.analysis.systolic, this.analysis.diastolic, this.analysis.time, this.analysis.pulse, this.analysis.errors, this.analysis.artefacts);
+			report_graph.plot();
+
+			function format(n, digits) {
+				digits = Math.pow(10, digits);
+				if (isFinite(n))
+					return String(Math.round(n * digits) / digits);
+				return "-";
+			}
+
+			var rows = [["№", "Время", "САД", "ДАД", "ПАД", "ЧСС", "Ошибка", "Двойное произведение", "Критерий S", "Индекс Кердо"]];
+			var a = this.analysis;
+			$.every(a.systolic, function(data, i) {
+				var error = "";
+				if (a.errors[i] != null)
+					error = String(a.errors[i]);
+				else if (a.artefacts[i] != null)
+					error = "*";
+				var b = a.analysis.full.data;
+				rows.push([
+					String(i + 1),
+					String(a.time_s[i]),
+					String(a.systolic[i]),
+					String(a.diastolic[i]),
+					format(b.pulse_bp[i], 0),
+					String(a.pulse[i]),
+					error,
+					format(b.double_product[i], 2),
+					format(b.s_kriteria[i], 1),
+					format(b.kerdo[i], 2)
+				]);
+			});
+			var table = $.table.apply($, rows);
+			table.border = 1;
+			table.cellPadding = 5;
+			$.$("report_analysis").appendChild(table);
+		},
+
+		draw_analysis: function(container, full) {
 			var data_analysis = this.analysis.analyze();
 			var format = function(value) {
 				return value != null && !isNaN(value) ? String(value) : "-";
 			};
-			var values1 = {
+			var values = {
 				systolic: [loc.sys_abp2, loc.sys_abp3],
 				diastolic: [loc.dia_abp2, loc.dia_abp3],
 				pulse_bp: [loc.pulse_bp, loc.pulse_bp2],
@@ -1573,42 +1667,113 @@
 				s_kriteria: [loc.criterion_s, loc.criterion_s2],
 				double_product: [loc.double_product, loc.double_product2]
 			};
-			var rows = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
-			var period = $.$("abp_analyze_period").value;
-			$.each(values1, function(name, key) {
-				var item = data_analysis[period][key];
-				var title = $.e("span", {title: name[1], style: {cursor: name[1] != null ? "help" : null}}, [name[0]]);
-				rows.push([title, format(item.max), format(item.mean), format(item.min), format(item.std)]);
-			});
-
-			var table = $.table.apply($, rows);
-			table.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
-			table.width = 580;
-			table.cellPadding = 5;
-			table.border = 1;
-			$.clear("abp_analyze_table1").appendChild(table);
-
-			$.every(["systolic", "diastolic"], function(key1) {
-				$.every(["hyper", "hypo"], function(key2) {
-					$.$("abp_blood_pressure_load_" + key1 + "_" + key2).innerHTML = data_analysis.blood_pressure_load[key1][key2];
-					$.$("abp_area_under_curve_" + key1 + "_" + key2).innerHTML = data_analysis.area_under_curve[key1][key2];
+			var periods = [["day", "Активный период"], ["night", "Пассивный период"], ["full", "Весь период"]];
+			var table1;
+			if (full) {
+				var rows = [];
+				var header1 = [""];
+				var header2 = [];
+				$.every(periods, function(period) {
+					header1.push(period[1]);
+					header2 = header2.concat([loc.maximum, loc.average, loc.minimum, loc.stdev]);
 				});
-				$.$("daily_index_" + key1).innerHTML = format(data_analysis.day_index[key1]);
-				$.$("morning_speed_" + key1).innerHTML = format(data_analysis.speed[key1]);
-			});
+				rows.push(header1);
+				rows.push(header2);
+				$.each(values, function(name, key) {
+					var line = [name[0]];
+					$.every(periods, function(period) {
+						var item = data_analysis[period[0]][key];
+						line = line.concat([format(item.max), format(item.mean), format(item.min), format(item.std)]);
+					}, this);
+					rows.push(line);
+				});
+				table1 = $.table.apply($, rows);
+				table1.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+				table1.format(null, [{rowSpan: 2}, {colSpan: 4}, {colSpan: 4}, {colSpan: 4}], 0);
+			} else {
+				var rows = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
+				var period = $.$("abp_analyze_period").value;
+				$.each(values, function(name, key) {
+					var item = data_analysis[period][key];
+					var title = $.e("span", {title: name[1], style: {cursor: name[1] != null ? "help" : null}}, [name[0]]);
+					rows.push([title, format(item.max), format(item.mean), format(item.min), format(item.std)]);
+				});
+				table1 = $.table.apply($, rows);
+				table1.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+			}
 
+			table1.width = 580;
+			table1.cellPadding = 5;
+			table1.border = 1;
+			$.clear(container).appendChild(table1);
+
+			if (full) {
+				var header1 = [""];
+				var header2 = [];
+				var header3 = [];
+				$.every(periods, function(period) {
+					header1.push(period[1]);
+					header2 = header2.concat(["САД", "ДАД"]);
+					header3 = header3.concat(["Гипертензия", "Гипотензия", "Гипертензия", "Гипотензия"]);
+				});
+
+				var line1 = ["Индекс времени"];
+				var line2 = ["Индекс площади"];
+				$.every(periods, function(period) {
+					$.every(["systolic", "diastolic"], function(key1) {
+						$.every(["hyper", "hypo"], function(key2) {
+							line1.push(String(data_analysis[period[0]].blood_pressure_load[key1][key2]));
+							line2.push(String(data_analysis[period[0]].area_under_curve[key1][key2]));
+						});
+					});
+				});
+				var table2 = $.table.apply($, [header1, header2, header3, line1, line2]);
+				// table2.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+				table2.format(null, [{rowSpan: 3}, {colSpan: 4}, {colSpan: 4}, {colSpan: 4}], 0);
+				table2.format(null, [{colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}], 1);
+				table2.width = 580;
+				table2.cellPadding = 5;
+				table2.border = 1;
+				$.$(container).appendChild(table2);
+
+				var header = ["", "САД", "ДАД"];
+				var line1 = ["Суточный индекс"];
+				var line2 = ["Скорость утреннего повышения"];
+				$.every(["systolic", "diastolic"], function(key1) {
+					line1.push(format(data_analysis.day_index[key1]));
+					line2.push(format(data_analysis.speed[key1]));
+				});
+				var table3 = $.table.apply($, [header, line1, line2]);
+				table3.cellPadding = 5;
+				table3.border = 1;
+				$.$(container).appendChild(table3);
+			} else {
+				$.every(["systolic", "diastolic"], function(key1) {
+					$.every(["hyper", "hypo"], function(key2) {
+						$.$("abp_blood_pressure_load_" + key1 + "_" + key2).innerHTML = data_analysis.blood_pressure_load[period][key1][key2];
+						$.$("abp_area_under_curve_" + key1 + "_" + key2).innerHTML = data_analysis.area_under_curve[period][key1][key2];
+					});
+					$.$("daily_index_" + key1).innerHTML = format(data_analysis.day_index[key1]);
+					$.$("morning_speed_" + key1).innerHTML = format(data_analysis.speed[key1]);
+				});
+			}
+		},
+
+		get_meas_data: function(terminal, patient, meas) {
+			var measdata = this.cache.get("measdata", [terminal, patient, meas]);
+			if (measdata == null) {
+				measdata = this.query({query: "meas", terminal: terminal, patient: patient, meas: meas});
+				this.cache.add("measdata", [terminal, patient, meas], measdata);
+			}
+			return measdata;
 		},
 
 		open_meas: function(item, path) {
 			try {
 				this.open_tab(null);
 				if (item) {
-					var measdata = this.cache.get("measdata", [path.terminal, path.patient, item.id]);
 					var meas = this.cache.get("meas", [path.terminal, path.patient, item.id]);
-					if (measdata == null) {
-						measdata = this.query({query: "meas", terminal: path.terminal, patient: path.patient, meas: item.id});
-						this.cache.add("measdata", [path.terminal, path.patient, item.id], measdata);
-					}
+					var measdata = this.get_meas_data(path.terminal, path.patient, item.id);
 					$.toggle(meas.type == "АД", "card_meas_abp");
 					$.toggle(meas.type == "ЭКГ", "card_meas_ecg");
 					$.toggle(meas.type == "ИАД", "card_meas_abpm");
@@ -1777,23 +1942,23 @@
 			// console.log(info);
 		},
 
+		get_patient_info: function(terminal, patient) {
+			var args = [terminal, patient];
+			var info = this.cache.get("patient_info", args);
+			if (info == null) {
+				info = this.query({query: "patient", terminal: terminal, patient: patient});
+				this.cache.add("patient_info", args, info);
+			}
+			return info;
+		},
+
 		open_tab: function(item, path) {
 			try {
 				if (item && item.id == "info") {
-					var args = [path.terminal, path.patient];
-					var info = this.cache.get("patient_info", args);
-					if (info == null) {
-						info = this.query({query: "patient", terminal: path.terminal, patient: path.patient});
-						this.cache.add("patient_info", args, info);
-					}
+					var info = this.get_patient_info(path.terminal, path.patient);
 					this.make_card_info(info, path.terminal, path.patient);
 				} else if (item && item.id == "diagnosis") {
-					var args = [path.terminal, path.patient];
-					var info = this.cache.get("patient_diagnosis", args);
-					if (info == null) {
-						info = this.query({query: "patient", terminal: path.terminal, patient: path.patient});
-						this.cache.add("patient_diagnosis", args, info);
-					}
+					var info = this.get_patient_info(path.terminal, path.patient);
 					$.$("hypertension_grade").value = info.stepen_ag;
 /*
 					var fields = [
@@ -2028,6 +2193,7 @@
 			added: ["Проведено ", "Added "],
 			SMAD: ["суточное мониторирование СМАД #", "daily monitoring #"],
 			card_conclusion: ["Заключение по суточному мониторированию СМАД #", "Daily monitoring conclusion #"],
+			report: ["Отчет", "Report"],
 		}
 
 	});

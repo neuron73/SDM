@@ -225,16 +225,18 @@
 		   b.appendChild(r);
 		}
 		var table = $$.e("table", {cellSpacing: 0, cellPadding: 0}, [b]);
-		table.format = function(style, attr) {
+		table.format = function(style, attr, col) {
 			if(attr == null && style == null)
 				return this;
-			$.every(this.getElementsByTagName("tr"), function(tr) {
+			$.every(this.getElementsByTagName("tr"), function(tr, i) {
 				if(tr.parentNode.parentNode != this)
 					return;
-				$.every(tr.childNodes, function(e, i) {
+				$.every(tr.childNodes, function(e, j) {
 					if(e.nodeName.toLowerCase() == "td") {
-						$.apply(e, (attr  || {})[i]);
-						$$.style(e, (style || {})[i]);
+						if (col == null || col == i) {
+							$.apply(e, (attr  || {})[j]);
+							$$.style(e, (style || {})[j]);
+						}
 					}
 				});
 			}, this);
