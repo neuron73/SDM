@@ -1079,6 +1079,13 @@
 
 		'extends': $.Eventable,
 
+		diagnosis_types: {
+			// diabetes: $.qw("diabetes"),														// СД - сахарный диабет
+			risk_factor: $.qw("diabetes cholesterol age parents smoking inactivity"),		// ФР - факторы риска
+			target_organ: $.qw("hypertrophy proteinuria atherosclerosis retina"),			// ПОМ - поражение органов-мишеней
+			clinical_conditions: $.qw("cerebrovascular cardio renal vascular retinopathy")	// АКС - ассоциированные клинические состояния
+		},
+
 		initialize: function(backend, cgi_bin) {
 			this.backend = backend;
 			this.cgi_bin = cgi_bin;
@@ -1181,7 +1188,10 @@
 					conclusion: $.$("abp_monitoring_conclusion").value
 				});
 			}));
-			this.onEvent("grade_update", $.F(this, this.grade_update));
+			this.onEvent("grade_update", $.F(this, function() {
+				this.grade_update();
+				this.diagnosis_save(this.navigation.get("terminal"), this.navigation.get("patient"));
+			}));
 
 			this.monitor_dispatcher_URL = "http://localhost:18345/";
 
@@ -1510,7 +1520,6 @@
 						this.menus.measurements[type].update(items[type]);
 					}, this);
 
-					// TODO: load diagnosis
 					this.grade_update();
 
 					$.show("card");
@@ -1594,27 +1603,34 @@
 
 		generate_report: function(container, path) {
 			var info = this.get_patient_info(path.terminal, path.patient);
-			// console.log(info);
+			var meas = this.cache.get("meas", [path.terminal, path.patient, path.meas]);
+			// console.log(path);
+			// console.log(meas);
 			var report = {
 				n: path.patient,
 				patient: info.name + " " + info.surname + " " + info.family,
-				sex: info.sex ? (info.sex == 1 ? "мужской" : "женский") : "",
+				sex: info.sex ? (info.sex == 1 ? "мужской" : "женский") : "-",
 				dob: info.burthday,
 				weight: info.ves,
 				height: info.rost,
-				age: 0,
+				age: "-",
 				hip: info.bedro,
 				waist: info.talia,
-				hip_waist_index: 0,
-				comment: info.coment,
+				hip_waist_index: String(info.bedro > 0 && info.talia > 0 ? info.talia / info.bedro : 0),
+				weight_index: String(info.ves > 0 && info.rost > 0 ? Math.round(info.ves / info.rost / info.rost * 10000) : 0),
+				meas_date: meas.date + " " + meas.time,
 			};
+			// console.log(this.get_meas_data(path.terminal, path.patient, path.meas));
 			$.each(report, function(value, key) {
 				$.$("report_" + key).innerHTML = $.utf8.decode(value);
 			});
+			$.$("report_comment").innerHTML = $.utf8.decode(meas.comment).replace(/\n/g, "<br />");
+			$.$("report_diagnosis").innerHTML = $.utf8.decode(meas.diagnosis).replace(/\n/g, "<br />");
+
 			this.draw_analysis("report_analysis", true);
 
 			var report_graph = new Graph($.$("report_canvas"));
-			report_graph.resize(800, 700);
+			report_graph.resize(1000, 700);
 			report_graph.update(this.analysis.systolic, this.analysis.diastolic, this.analysis.time, this.analysis.pulse, this.analysis.errors, this.analysis.artefacts);
 			report_graph.plot();
 
@@ -1650,6 +1666,7 @@
 			var table = $.table.apply($, rows);
 			table.border = 1;
 			table.cellPadding = 5;
+			table.style.marginTop = "20px";
 			$.$("report_analysis").appendChild(table);
 		},
 
@@ -1688,8 +1705,11 @@
 					rows.push(line);
 				});
 				table1 = $.table.apply($, rows);
-				table1.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+				var format1 = [null];
+
+				table1.format([{whiteSpace: "nowrap", textAlign: "left"}]);
 				table1.format(null, [{rowSpan: 2}, {colSpan: 4}, {colSpan: 4}, {colSpan: 4}], 0);
+				table1.style.marginTop = "20px";
 			} else {
 				var rows = [["", loc.maximum, loc.average, loc.minimum, loc.stdev]];
 				var period = $.$("abp_analyze_period").value;
@@ -1714,7 +1734,7 @@
 				$.every(periods, function(period) {
 					header1.push(period[1]);
 					header2 = header2.concat(["САД", "ДАД"]);
-					header3 = header3.concat(["Гипертензия", "Гипотензия", "Гипертензия", "Гипотензия"]);
+					header3 = header3.concat(["гиперт.", "гипот.", "гипер.", "гипот."]);
 				});
 
 				var line1 = ["Индекс времени"];
@@ -1728,12 +1748,14 @@
 					});
 				});
 				var table2 = $.table.apply($, [header1, header2, header3, line1, line2]);
-				// table2.format(null, [null, {align: "center"}, {align: "center"}, {align: "center"}, {align: "center"}]);
+				table2.format([{whiteSpace: "nowrap", textAlign: "left"}], null, 3);
+				table2.format([{whiteSpace: "nowrap", textAlign: "left"}], null, 4);
 				table2.format(null, [{rowSpan: 3}, {colSpan: 4}, {colSpan: 4}, {colSpan: 4}], 0);
 				table2.format(null, [{colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}, {colSpan: 2}], 1);
 				table2.width = 580;
 				table2.cellPadding = 5;
 				table2.border = 1;
+				table2.style.marginTop = "20px";
 				$.$(container).appendChild(table2);
 
 				var header = ["", "САД", "ДАД"];
@@ -1744,14 +1766,16 @@
 					line2.push(format(data_analysis.speed[key1]));
 				});
 				var table3 = $.table.apply($, [header, line1, line2]);
+				table3.format([{whiteSpace: "nowrap", textAlign: "left"}]);
 				table3.cellPadding = 5;
 				table3.border = 1;
+				table3.style.marginTop = "20px";
 				$.$(container).appendChild(table3);
 			} else {
 				$.every(["systolic", "diastolic"], function(key1) {
 					$.every(["hyper", "hypo"], function(key2) {
-						$.$("abp_blood_pressure_load_" + key1 + "_" + key2).innerHTML = data_analysis.blood_pressure_load[period][key1][key2];
-						$.$("abp_area_under_curve_" + key1 + "_" + key2).innerHTML = data_analysis.area_under_curve[period][key1][key2];
+						$.$("abp_blood_pressure_load_" + key1 + "_" + key2).innerHTML = data_analysis[period].blood_pressure_load[key1][key2];
+						$.$("abp_area_under_curve_" + key1 + "_" + key2).innerHTML = data_analysis[period].area_under_curve[key1][key2];
 					});
 					$.$("daily_index_" + key1).innerHTML = format(data_analysis.day_index[key1]);
 					$.$("morning_speed_" + key1).innerHTML = format(data_analysis.speed[key1]);
@@ -1952,14 +1976,48 @@
 			return info;
 		},
 
+		diagnosis_load: function(terminal, patient) {
+			var info = this.get_patient_info(terminal, patient);
+			$.$("hypertension_grade").value = info.stepen_ag;
+
+			$.every(this.diagnosis_types.clinical_conditions, function(key, i) {
+				$.$("ah_" + key).checked = info.soput_zab && info.soput_zab.match(String(i));
+			});
+			$.every(this.diagnosis_types.target_organ, function(key, i) {
+				$.$("ah_" + key).checked = info.por_org_mish && info.por_org_mish.match(String(i));
+			});
+			$.every(this.diagnosis_types.risk_factor, function(key, i) {
+				$.$("ah_" + key).checked = info.f_riska && info.f_riska.match(String(i + 1));
+			});
+			$.$("ah_diabetes").checked = info.sah_diabet;
+		},
+
+		diagnosis_save: function(terminal, patient) {
+			var info = {
+				soput_zab: "",
+				por_org_mish: "",
+				f_riska: ""
+			};
+			$.every(this.diagnosis_types.clinical_conditions, function(key, i) {
+				info.soput_zab += $.$("ah_" + key).checked ? String(i) : "";
+			});
+			$.every(this.diagnosis_types.target_organ, function(key, i) {
+				info.por_org_mish += $.$("ah_" + key).checked ? String(i) : "";
+			});
+			$.every(this.diagnosis_types.risk_factor, function(key, i) {
+				info.f_riska = $.$("ah_" + key).checked ? String(i + 1) : "";
+			});
+			info.sah_diabet = $.$("ah_diabetes").checked ? "1" : "";
+			// TODO: save
+		},
+
 		open_tab: function(item, path) {
 			try {
 				if (item && item.id == "info") {
 					var info = this.get_patient_info(path.terminal, path.patient);
 					this.make_card_info(info, path.terminal, path.patient);
 				} else if (item && item.id == "diagnosis") {
-					var info = this.get_patient_info(path.terminal, path.patient);
-					$.$("hypertension_grade").value = info.stepen_ag;
+					this.diagnosis_load(path.terminal, path.patient);
 /*
 					var fields = [
 						["Сопутствующие заболевания", "soput_zab", 0],

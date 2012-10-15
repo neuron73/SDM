@@ -127,6 +127,10 @@
 				border-bottom: 1px solid black;
 				border-right: 1px solid black;
 			}
+
+			#report_analysis table td {
+				text-align: center;
+			}
 		</style>
 		<script>
 			(function() {
@@ -389,7 +393,7 @@
 															<br />
 															<button id="abp_monitoring_conclusion_save" onclick="save_conclusion()">[% save %]</button>
 														</div>
-														<div id="abp_report" style="display:none; padding: 10px">
+														<div id="abp_report" style="display:none; padding: 10px; width: 1200px">
 															<h2>Результаты суточного мониторирования АД</h2>
 															<table class="report" cellspacing="0" cellpadding="0">
 																<tr>
@@ -440,6 +444,7 @@
 																	<td>Индекс "талия-бедро"</td>
 																	<td id="report_hip_waist_index"></td>
 																</tr>
+																<!--
 																<tr>
 																	<td>АДС, мм. рт. ст.</td>
 																	<td id="report_abps"></td>
@@ -452,13 +457,19 @@
 																	<td>ЧСС, уд./мин.</td>
 																	<td id="report_rate"></td>
 																</tr>
-																<tr>
-																	<td>Комментарий к измерению</td>
-																	<td id="report_comment"></td>
-																</tr>
+																-->
 															</table>
+															<h3>Комментарий к измерению:</h3>
+															<div id="report_comment"></div>
+															<br />
+															<br />
+															<br />
 															<div id="report_analysis"></div>
+															<br />
+															<br />
 															<canvas id="report_canvas" width="500" height="500"></canvas>
+															<h3>Заключение:</h3>
+															<div id="report_diagnosis"></div>
 														</div>
 													</td>
 													<td valign="top">
