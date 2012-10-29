@@ -38,7 +38,7 @@ if ($conf->{DB} eq 'mssql') {
 	$TABLE->{sessions} = "pac_meas";
 	$TABLE->{measurements} = "meas";
 
-	$dbh = DBI->connect("DBI:mysql:database=SDM;host=localhost;port=3306", $conf->{mysql_user}, $conf->{mysql_pwd}) or die "mysql connect error";
+	$dbh = DBI->connect("DBI:mysql:database=SDM2;host=localhost;port=3306", $conf->{mysql_user}, $conf->{mysql_pwd}) or die "mysql connect error";
 }
 
 
@@ -135,7 +135,7 @@ sub send_mail {
 	$msg->send;
 }
 
-my @info_keys = qw(family name surname burthday policy_series policy_number sex marital_status social_status education employment profession post city street house_number house_korpus house_unit_number house_phone business_phone rost ves bedro talia dispensary_group);
+my @info_keys = qw(family name surname burthday policy_series policy_number sex marital_status social_status education employment profession post city street house_number house_korpus house_unit_number house_phone business_phone rost ves bedro talia dispensary_group f_riska por_org_mish sah_diabet stepen_ag soput_zab);
 
 # print "Content-type: text/html; charset=UTF-8\n\n"; print $query; exit;
 =pod
@@ -384,8 +384,10 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	foreach (@info_keys) {
 		my $key = "card_info_$_";
 		my $value = $q->param($key);
-		$value =~ s/\'/\\\'/;
-		push @fields, "$_ = '$value'";
+		if (defined($value)) {
+			$value =~ s/\'/\\\'/;
+			push @fields, "$_ = '$value'";
+		}
 	}
 
 	my $sth = $dbh->prepare("update $TABLE->{patients} SET " . join(",", @fields) . " where n_terminal = $n_terminal and n_kart = $n_kart");

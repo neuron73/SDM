@@ -1,8 +1,8 @@
 CREATE TABLE terminals (
 	terminalID int NOT NULL AUTO_INCREMENT,
 	n_terminal int NULL,
-	name_terminal varchar(30) NULL,
-	email_terminal varchar(30) NULL,
+	name_terminal varchar(60) NULL,
+	email_terminal varchar(60) NULL,
 	fio1 varchar(50) NULL,
 	fio2 varchar(50) NULL,
 	adr1 varchar(50) NULL,

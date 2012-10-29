@@ -395,70 +395,7 @@
 														</div>
 														<div id="abp_report" style="display:none; padding: 10px; width: 1200px">
 															<h2>Результаты суточного мониторирования АД</h2>
-															<table class="report" cellspacing="0" cellpadding="0">
-																<tr>
-																	<td style="width:300px">№ карточки</td>
-																	<td id="report_n"></td>
-																</tr>
-																<tr>
-																	<td>Пациент</td>
-																	<td id="report_patient"></td>
-																</tr>
-																<tr>
-																	<td>Пол</td>
-																	<td id="report_sex"></td>
-																</tr>
-																<tr>
-																	<td>Дата рождения</td>
-																	<td id="report_dob"></td>
-																</tr>
-																<tr>
-																	<td>Дата мониторирования</td>
-																	<td id="report_meas_date"></td>
-																</tr>
-																<tr>
-																	<td>Возраст</td>
-																	<td id="report_age"></td>
-																</tr>
-																<tr>
-																	<td>Вес</td>
-																	<td id="report_weight"></td>
-																</tr>
-																<tr>
-																	<td>Рост</td>
-																	<td id="report_height"></td>
-																</tr>
-																<tr>
-																	<td>Индекс массы тела</td>
-																	<td id="report_weight_index"></td>
-																</tr>
-																<tr>
-																	<td>Окружность талии</td>
-																	<td id="report_waist"></td>
-																</tr>
-																<tr>
-																	<td>Окружность бедер</td>
-																	<td id="report_hip"></td>
-																</tr>
-																<tr>
-																	<td>Индекс "талия-бедро"</td>
-																	<td id="report_hip_waist_index"></td>
-																</tr>
-																<!--
-																<tr>
-																	<td>АДС, мм. рт. ст.</td>
-																	<td id="report_abps"></td>
-																</tr>
-																<tr>
-																	<td>АДД, мм. рт. ст.</td>
-																	<td id="report_abpd"></td>
-																</tr>
-																<tr>
-																	<td>ЧСС, уд./мин.</td>
-																	<td id="report_rate"></td>
-																</tr>
-																-->
-															</table>
+															<div id="report_info"></div>
 															<h3>Комментарий к измерению:</h3>
 															<div id="report_comment"></div>
 															<br />

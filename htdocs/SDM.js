@@ -183,7 +183,7 @@
 						intervals = $.grep(filter, intervals);
 						var area_under_curve = 0; // Индекс площади
 						var blood_pressure_load = 0; // Индекс времени
-						var duration = (intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60;
+						var duration = intervals.length ? ((intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60) : 1;
 						$.every(intervals, function(interval) {
 							var points = interval.polygon;
 							var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
@@ -1614,24 +1614,25 @@
 			// console.log(path);
 			// console.log(meas);
 			var gender = $.utf8.decode(String(info.sex || ""));
-			var report = {
-				n: path.patient,
-				patient: info.name + " " + info.surname + " " + info.family,
-				sex: gender == "МУЖ" ? loc.male : (gender == "ЖЕН" ? loc.female : "-"),
-				dob: info.burthday,
-				weight: info.ves,
-				height: info.rost,
-				age: "-",
-				hip: info.bedro,
-				waist: info.talia,
-				hip_waist_index: format(info.bedro > 0 && info.talia > 0 ? info.talia / info.bedro : 0, 2),
-				weight_index: String(info.ves > 0 && info.rost > 0 ? Math.round(info.ves / info.rost / info.rost * 10000) : 0),
-				meas_date: meas.date + " " + meas.time,
-			};
-			// console.log(this.get_meas_data(path.terminal, path.patient, path.meas));
-			$.each(report, function(value, key) {
-				$.$("report_" + key).innerHTML = $.utf8.decode(value);
+			var report_info_rows = [
+				[loc.card_number, path.patient],
+				[loc.patient, info.name + " " + info.surname + " " + info.family],
+				[loc.gender, gender == "МУЖ" ? loc.male : (gender == "ЖЕН" ? loc.female : "-")],
+				[loc.dob2, info.burthday],
+				[loc.weight, info.ves],
+				[loc.height, info.rost],
+				[loc.age, "-"],
+				[loc.hip, info.bedro],
+				[loc.waist, info.talia],
+				[loc.hip_waist_index, format(info.bedro > 0 && info.talia > 0 ? info.talia / info.bedro : 0, 2)],
+				[loc.weight_index, String(info.ves > 0 && info.rost > 0 ? Math.round(info.ves / info.rost / info.rost * 10000) : 0)],
+				[loc.meas_date, meas.date + " " + meas.time],
+			];
+			$.every(report_info_rows, function(row) {
+				row[1] = $.utf8.decode(row[1]);
 			});
+			$.clear("report_info").appendChild($.table.apply($, report_info_rows).format(null, [{width: 300}]));
+
 			$.$("report_comment").innerHTML = $.utf8.decode(meas.comment).replace(/\n/g, "<br />");
 			$.$("report_diagnosis").innerHTML = $.utf8.decode(meas.diagnosis).replace(/\n/g, "<br />");
 
@@ -1642,7 +1643,7 @@
 			report_graph.update(this.analysis.systolic, this.analysis.diastolic, this.analysis.time, this.analysis.pulse, this.analysis.errors, this.analysis.artefacts);
 			report_graph.plot();
 
-			var rows = [["№", "Время", "САД", "ДАД", "ПАД", "ЧСС", "Ошибка", "Двойное произведение", "Критерий S", "Индекс Кердо"]];
+			var rows = [[loc.number, loc.time, loc.sys_abp, loc.dia_abp, loc.pulse_abp, loc.rate, loc.error2, loc.double_product, loc.criterion_s, loc.kerdo]];
 			var a = this.analysis;
 			$.every(a.systolic, function(data, i) {
 				var error = "";
@@ -1685,7 +1686,7 @@
 				s_kriteria: [loc.criterion_s, loc.criterion_s2],
 				double_product: [loc.double_product, loc.double_product2]
 			};
-			var periods = [["day", "Активный период"], ["night", "Пассивный период"], ["full", "Весь период"]];
+			var periods = [["day", loc.active_period], ["night", loc.passive_period], ["full", loc.full_period]];
 			var table1;
 			if (full) {
 				var rows = [];
@@ -1734,12 +1735,12 @@
 				var header3 = [];
 				$.every(periods, function(period) {
 					header1.push(period[1]);
-					header2 = header2.concat(["САД", "ДАД"]);
-					header3 = header3.concat(["гиперт.", "гипот.", "гипер.", "гипот."]);
+					header2 = header2.concat([loc.sys_abp, loc.dia_abp]);
+					header3 = header3.concat([loc.hypertension, loc.hypotension, loc.hypertension, loc.hypotension]);
 				});
 
-				var line1 = ["Индекс времени"];
-				var line2 = ["Индекс площади"];
+				var line1 = [loc.pressure_load];
+				var line2 = [loc.area_under_curve];
 				$.every(periods, function(period) {
 					$.every(["systolic", "diastolic"], function(key1) {
 						$.every(["hyper", "hypo"], function(key2) {
@@ -1759,9 +1760,9 @@
 				table2.style.marginTop = "20px";
 				$.$(container).appendChild(table2);
 
-				var header = ["", "САД", "ДАД"];
-				var line1 = ["Суточный индекс"];
-				var line2 = ["Скорость утреннего повышения"];
+				var header = ["", loc.sys_abp, loc.dia_abp];
+				var line1 = [loc.daily_index];
+				var line2 = [loc.morning_speed];
 				$.every(["systolic", "diastolic"], function(key1) {
 					line1.push(format(data_analysis.day_index[key1]));
 					line2.push(format(data_analysis.speed[key1]));
@@ -2011,7 +2012,13 @@
 				info.f_riska += $.$("ah_" + key).checked ? this.risk_factor_keys[i] : "";
 			}, this);
 			info.sah_diabet = $.$("ah_diabetes").checked ? "Z" : " ";
-			// TODO: save
+
+			var request = {query: "edit_patient", terminal: terminal, patient: patient};
+			$.each(info, function(value, key) {
+				request["card_info_" + key] = value;
+			});
+			request["card_info_stepen_ag"] = $.$("hypertension_grade").value;
+			var resp = this.post(request);
 		},
 
 		open_tab: function(item, path) {
@@ -2167,10 +2174,12 @@
 			ABP: ["Артериальное давление", "Arterial blood pressure"],
 			sys_abp: ["САД", "Upper"],
 			dia_abp: ["ДАД", "Lower"],
+			pulse_abp: ["ПАД", "Diff"],
 			rate: ["ЧСС", "Rate"],
 			rate2: ["Частота сердечных сокращений", "Heart rate"],
 			time: ["Время", "Time"],
 			error: ["Ошибка", "Err"],
+			error2: ["Ошибка", "Error"],
 			main: ["Главная", "Main"],
 			admin: ["Администратор", "Administrator"],
 			terminal: ["Терминал ", "Terminal "],
@@ -2206,6 +2215,7 @@
 			name: ["Имя", "Name"],
 			second_name: ["Отчество", "Second name"],
 			dob: ["Дата рождения(дд.мм.гггг)", "Date of birth(dd.mm.yyyy)"],
+			dob2: ["Дата рождения", "Date of birth"],
 			sex: ["Пол", "Sex"],
 			height: ["Рост", "Height"],
 			weight: ["Вес", "Weight"],
@@ -2255,6 +2265,23 @@
 			SMAD: ["суточное мониторирование СМАД #", "daily monitoring #"],
 			card_conclusion: ["Заключение по суточному мониторированию СМАД #", "Daily monitoring conclusion #"],
 			report: ["Отчет", "Report"],
+			daily_index: ["Суточный индекс", "Daily index"],
+			morning_speed: ["Скорость утреннего повышения", "Morning increase speed"],
+			hypertension: ["гиперт.", "Hypertension"],
+			hypotension: ["гипот.", "Hypotension"],
+			pressure_load: ["Индекс времени", "Pressure load"],
+			area_under_curve: ["Индекс площади", "Area under curve"],
+			active_period: ["Активный период", "Active period"],
+			passive_period: ["Пассивный период", "Passive period"],
+			full_period: ["Весь период", "Full period"],
+			number: ["№", "#"],
+			card_number: ["№ карточки", "Card #"],
+			patient: ["Пациент", "Patient"],
+			gender: ["Пол", "Gender"],
+			age: ["Возраст", "Age"],
+			meas_date: ["Дата мониторирования", "Monitoring date"],
+			weight_index: ["Индекс массы тела", "Weight index"],
+			hip_waist_index: ["Индекс \"талия-бедро\"", "Hip-waist index"],
 		}
 
 	});
