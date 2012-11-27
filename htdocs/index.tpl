@@ -32,6 +32,12 @@
 				width: 350px;
 			}
 
+			#new_measurements {
+				overflow: auto;
+				margin: 4px 8px;
+				width: 350px;
+			}
+
 			#patients {
 				overflow: auto;
 				margin: 4px 8px;
@@ -336,67 +342,124 @@
 															</table>
 														</div>
 														<div id="abp_monitoring" style="margin: 10px; display:none">
-															<table>
+															<table width="100%">
 																<tr>
-																	<td>
-																		[% conditions %]:
+																	<td width="50%">
+																		<table>
+																			<tr>
+																				<td>
+																					[% conditions %]:
+																				</td>
+																				<td>
+																					<select id="abp_monitoring_type">
+																						<option value="0"></option>
+																						<option value="1">[% hospital %]</option>
+																						<option value="2">[% ambulatory %]</option>
+																						<option value="3">[% working_day1 %]</option>
+																						<option value="4">[% day_off1 %]</option>
+																						<option value="5">[% working_day2 %]</option>
+																						<option value="6">[% day_off2 %]</option>
+																					</select>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% phys_load %]:
+																				</td>
+																				<td>
+																					<select id="abp_monitoring_physical">
+																						<option value="0"></option>
+																						<option value="1">[% heavy %]</option>
+																						<option value="2">[% light %]</option>
+																						<option value="3">[% none %]</option>
+																					</select>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% stress %]:
+																				</td>
+																				<td>
+																					<select id="abp_monitoring_emo">
+																						<option value="0"></option>
+																						<option value="1">[% stress_situation %]</option>
+																						<option value="2">[% tense_anxiety %]</option>
+																						<option value="3">[% none %]</option>
+																					</select>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% time_sleep %]:
+																				</td>
+																				<td>
+																					<input type="text" id="time_sleep"></input>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% time_wake_up %]:
+																				</td>
+																				<td>
+																					<input type="text" id="time_wake_up"></input>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% time_breakfast %]:
+																				</td>
+																				<td>
+																					<input type="text" id="time_breakfast"></input>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% time_lunch %]:
+																				</td>
+																				<td>
+																					<input type="text" id="time_lunch"></input>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td>
+																					[% time_dinner %]:
+																				</td>
+																				<td>
+																					<input type="text" id="time_dinner"></input>
+																				</td>
+																			</tr>
+																		</table>
 																	</td>
-																	<td>
-																		<select id="abp_monitoring_type">
-																			<option value="0"></option>
-																			<option value="1">[% hospital %]</option>
-																			<option value="2">[% ambulatory %]</option>
-																			<option value="3">[% working_day1 %]</option>
-																			<option value="4">[% day_off1 %]</option>
-																			<option value="5">[% working_day2 %]</option>
-																			<option value="6">[% day_off2 %]</option>
-																		</select>
-																	</td>
-																</tr>
-																<tr>
-																	<td>
-																		[% phys_load %]:
-																	</td>
-																	<td>
-																		<select id="abp_monitoring_physical">
-																			<option value="0"></option>
-																			<option value="1">[% heavy %]</option>
-																			<option value="2">[% light %]</option>
-																			<option value="3">[% none %]</option>
-																		</select>
-																	</td>
-																</tr>
-																<tr>
-																	<td>
-																		[% stress %]:
-																	</td>
-																	<td>
-																		<select id="abp_monitoring_emo">
-																			<option value="0"></option>
-																			<option value="1">[% stress_situation %]</option>
-																			<option value="2">[% tense_anxiety %]</option>
-																			<option value="3">[% none %]</option>
-																		</select>
+																	<td valign="top">
+																		[% test_meas_before %] <br />
+																		<input type="text" id="meas_before_1"></input> <br />
+																		<input type="text" id="meas_before_2"></input> <br />
+																		<input type="text" id="meas_before_3"></input> <br />
+																		<br />
+																		[% test_meas_after %]: <br />
+																		<input type="text" id="meas_after_1"></input> <br />
+																		<input type="text" id="meas_after_2"></input> <br />
+																		<input type="text" id="meas_after_3"></input> <br />
 																	</td>
 																</tr>
 															</table>
 														</div>
 														<div id="abp_comment" style="display:none; padding: 10px">
-															Комментарий врача:
+															[% meas_comment %]:
 															<textarea id="abp_monitoring_comment" style="width: 100%; height: 385px;"></textarea>
 															<br />
 															<button id="abp_monitoring_comment_save" onclick="save_comment()">[% save %]</button>
 														</div>
 														<div id="abp_conclusion" style="display:none; padding: 10px">
-															Заключение:
+															[% meas_conclusion %]:
 															<textarea id="abp_monitoring_conclusion" style="width: 100%; height: 385px;"></textarea>
 															<br />
 															<button id="abp_monitoring_conclusion_save" onclick="save_conclusion()">[% save %]</button>
 														</div>
 														<div id="abp_report" style="display:none; padding: 10px; width: 1200px">
-															<h2>Результаты суточного мониторирования АД</h2>
+															<h2>[% report_results %]</h2>
 															<div id="report_info"></div>
-															<h3>Комментарий к измерению:</h3>
+															<h3>[% meas_comment %]:</h3>
 															<div id="report_comment"></div>
 															<br />
 															<br />
@@ -405,7 +468,7 @@
 															<br />
 															<br />
 															<canvas id="report_canvas" width="500" height="500"></canvas>
-															<h3>Заключение:</h3>
+															<h3>[% meas_conclusion %]:</h3>
 															<div id="report_diagnosis"></div>
 														</div>
 													</td>
@@ -681,7 +744,8 @@
 										[% test_meas %]
 									</div>
 								</div>
-								<div id="terminal_info" style="display:none">
+								<div id="terminal_info" style="display:none;">
+									<div id="new_measurements"></div>
 									<!--<a href="" onclick="add_patient(); return false;">Добавить карточку</a>-->
 								</div>
 							</td>

@@ -426,7 +426,7 @@
 		chroot: function(terminal_id) {
 			this.root = terminal_id;
 			this.check();
-			if (this.sections[0] && (this.sections[0].id != terminal_id))
+			if (this.sections[0] == null || ((this.sections[0] || {}).id != terminal_id))
 				this.go("#terminal:" + terminal_id);
 		},
 
@@ -486,7 +486,10 @@
 						return false;
 					};
 					e.innerHTML = item[0];
-					this.container.appendChild($.div(e));
+					var div = $.div(e);
+					if (item[3]) // active
+						div.style.backgroundColor = "#e5e5e5";
+					this.container.appendChild(div);
 				}
 			}, this);
 		},
@@ -1155,6 +1158,7 @@
 				var size = $.window_size();
 				$.style("main", size);
 				$.style("terminals", {height: (size.height - 50) + "px"});
+				$.style("new_measurements", {height: (size.height - 50) + "px"});
 				$.style("patients", {height: (size.height - 50) + "px"});
 				$.$("card").style.width = left_menu_width + "px";
 				$.$("abp_meas_list").style.height = (size.height - 60) + "px";
@@ -1288,14 +1292,26 @@
 			AUTH = this.query({query: "auth"});
 			var name = AUTH.user == "admin" ? loc.admin : loc.terminal + AUTH.user.match(/(\d+)$/)[1];
 			$.$("auth_user_name").innerHTML = name;
-			if (AUTH.user != "admin")
+			if (AUTH.user != "admin") {
 				$.hide("tab_terminals");
+			} else {
+				this.requests = this.query({
+					query: "get_requests"
+				});
+			}
 			this.show_terminals();
 
 			this.navigation.init();
 
 			var m;
-			if (m = AUTH.user.match(/terminal(\d+)$/)) {
+/*
+			if (AUTH.user == "admin") {
+				this.requests = this.query({
+					query: "get_requests"
+				});
+				if (requests.length > 0) {
+				}
+			} else */ if (m = AUTH.user.match(/terminal(\d+)$/)) {
 				this.navigation.chroot(Number(m[1]));
 			}
 		},
@@ -1389,6 +1405,13 @@
 					terminal.name = $.utf8.decode(terminal.name);
 					terminals[Number(terminal.id)] = terminal;
 				});
+				$.every(this.requests, function(patient) {
+					var terminal = Number(patient.terminal);
+					if (terminals[terminal]) {
+						terminals[terminal].requests = terminals[terminal].requests || [];
+						terminals[terminal].requests.push(patient);
+					}
+				});
 				// console.log("add to cache: %o", terminals)
 				this.cache.add("terminal", null, terminals);
 			}
@@ -1397,12 +1420,14 @@
 			}));
 			var items = [];
 			$.every(terminals, function(terminal) {
-				if (terminal)
-					items.push([terminal.name, terminal]);
+				if (terminal) {
+					var requests = (terminal.requests || []).length;
+					items.push([terminal.name + (requests > 0 ? " [" + requests+ "]" : ""), terminal, null, requests > 0]);
+				}
 				// navigation.set("terminal", terminal.id, name);
 			});
 			menu.update(items);
-			this.block_main(null);
+			this.block_main("main");
 		},
 
 		open_terminal: function(item, path) {
@@ -1434,6 +1459,31 @@
 						// navigation.set("card", patient.id, name);
 					});
 					menu.update(items);
+
+					var menu2 = this.menus.new_meas = this.menus.new_meas || new Menu("new_measurements", $.F(this, function(title, meas) {
+						if (meas.id != -1) {
+							this.navigation.open(null, {type: "patient", id: meas.patient, title: $.utf8.decode(meas.name)}, {type: "meas", id: meas.meas});
+						}
+					}));
+					var items2 = [
+						[loc.new_measurements, {id: -1}],
+						null
+					];
+					var terminals = this.cache.get("terminal");
+					var count;
+					$.every(terminals, function(terminal) {
+						if (terminal && terminal.id == item.id) {
+							count = terminal.requests.length;
+							$.every(terminal.requests || [], function(meas) {
+								items2.push([$.utf8.decode(meas.name) + ", #" + meas.meas, meas]);
+							});
+						}
+					});
+					if (count > 0)
+						menu2.update(items2);
+					else
+						menu2.clear();
+
 					this.block_main("terminal");
 				}
 			} catch(e) {
@@ -1473,22 +1523,64 @@
 						measlist = this.load_meas_list(path.terminal, path.patient);
 					}
 
+					function get_submenu(meas) {
+						if (meas.type == "АД") {
+							var items = [
+								[loc.analysis, "analyze"],
+								[loc.conditions, "monitoring"],
+								[loc.comment, "comment"],
+							];
+
+							if (AUTH.user != "admin") {
+								if (meas.review_time != null) {
+									items = items.concat([
+										[loc.conclusion, "conclusion"],
+										[loc.report, "report"],
+									]);
+								} else if (meas.request_time == null) {
+									items = items.concat([
+										[loc.send, "send"],
+									]);
+								}
+							} else {
+								items = items.concat([
+									[loc.conclusion, "conclusion"],
+									[loc.report, "report"],
+								]);
+								if (meas.request_time != null && meas.review_time == null) {
+									items = items.concat([
+										[loc.mark_reviewed, "mark_reviewed"],
+									]);
+								}
+							}
+							return items;
+						}
+					}
+
 					var active_meas;
+					var active_meas_div;
 					var active_meas_type;
 					var meas_submenu = {};
-					new Menu(meas_submenu["АД"] = $.e("div", {'class': "meas_submenu"}), $.F(this, function(title, id) {
-						this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
-					})).update([
-						[loc.analysis, "analyze"],
-						[loc.conditions, "monitoring"],
-						[loc.comment, "comment"],
-						[loc.conclusion, "conclusion"],
-						[loc.report, "report"],
-						// [this.monitoring_report_link = $.e("a", {_target: "blank", onclick: $.F(this, this.open_monitoring_report)}, loc.report), "report"]
-					]);
+					var submenu = new Menu(meas_submenu["АД"] = $.e("div", {'class': "meas_submenu"}), $.F(this, function(title, id) {
+						if (id == "send") {
+							if (confirm(loc.send_confirm)) {
+								this.send_meas();
+								active_meas.request_time = true;
+								submenu.update(get_submenu(active_meas));
+							}
+						} else if (id == "mark_reviewed") {
+							if (confirm(loc.confirm_reviewed)) {
+								this.mark_reviewed();
+								active_meas.review_time = true;
+								submenu.update(get_submenu(active_meas));
+							}
+						} else {
+							this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
+						}
+					}));
 
-					meas_submenu["ИАД"] = $.div();
 					meas_submenu["ЭКГ"] = $.div();
+					meas_submenu["ИАД"] = $.div();
 
 					var types = ["АД", "ИАД", "ЭКГ"];
 					var containers = ["monitoring", "abpm", "ecg"];
@@ -1504,14 +1596,16 @@
 
 					$.every(measlist, function(meas) {
 						if (meas) {
-							items[meas.type].push([meas.name, meas, function(element) {
+							items[meas.type].push([meas.name, meas, function(element) { // click callback
 								if (active_meas) {
 									meas_submenu[active_meas_type].parentNode.removeChild(meas_submenu[active_meas_type]);
-									active_meas.className = null;
+									active_meas_div.className = null;
 								}
-								active_meas = element.parentNode; // div
-								active_meas.appendChild(meas_submenu[active_meas_type = meas.type]);
-								active_meas.className = "active_meas";
+								submenu.update(get_submenu(meas));
+								active_meas = meas;
+								active_meas_div = element.parentNode; // div
+								active_meas_div.appendChild(meas_submenu[active_meas_type = meas.type]);
+								active_meas_div.className = "active_meas";
 							}]);
 						}
 					});
@@ -1558,12 +1652,37 @@
 				meas.diagnosis = $.utf8.decode(meas.diagnosis || "");
 				meas.patient = patient;
 				meas.terminal = terminal;
+				meas.dinner_time = this.s2time(meas.dinner_time);
+				meas.sleep_time = this.s2time(meas.sleep_time);
+				meas.meas_before = this.s2abp(meas.meas_before);
+				meas.meas_after = this.s2abp(meas.meas_after);
 				var name = meas.type == "ИАД" ? loc.measurement : loc.monitoring;
 				meas.name = $.sprintf("%s #%d: %s", name, meas.id, meas.date);
 				measlist[Number(meas.id)] = meas;
-			});
+			}, this);
 			this.cache.add("meas", [terminal, patient], measlist);
 			return measlist;
+		},
+
+		send_meas: function() {
+			this.post({
+				query: "send_meas",
+				terminal: this.navigation.get("terminal"),
+				patient: this.navigation.get("patient"),
+				meas: this.navigation.get("meas"),
+			});
+		},
+
+		mark_reviewed: function() {
+			this.post({
+				query: "mark_reviewed",
+				terminal: this.navigation.get("terminal"),
+				patient: this.navigation.get("patient"),
+				meas: this.navigation.get("meas"),
+			});
+		},
+
+		save_meas: function() {
 		},
 
 		open_meas_panel: function(item, path) {
@@ -1681,7 +1800,7 @@
 				systolic: [loc.sys_abp2, loc.sys_abp3],
 				diastolic: [loc.dia_abp2, loc.dia_abp3],
 				pulse_bp: [loc.pulse_bp, loc.pulse_bp2],
-				pulse: [loc.rate, loc.rate2],
+				pulse: [loc.rate2, loc.rate2],
 				kerdo: [loc.kerdo, loc.kerdo2],
 				s_kriteria: [loc.criterion_s, loc.criterion_s2],
 				double_product: [loc.double_product, loc.double_product2]
@@ -1838,6 +1957,18 @@
 						}
 						conclusion.value = meas.diagnosis;
 
+						$.$("time_sleep").value = meas.sleep_time[0] || "";
+						$.$("time_wake_up").value = meas.sleep_time[1] || "";
+						$.$("time_breakfast").value = meas.dinner_time[0] || "";
+						$.$("time_lunch").value = meas.dinner_time[1] || "";
+						$.$("time_dinner").value = meas.dinner_time[2] || "";
+						$.$("meas_before_1").value = meas.meas_before[0] || "";
+						$.$("meas_before_2").value = meas.meas_before[1] || "";
+						$.$("meas_before_3").value = meas.meas_before[2] || "";
+						$.$("meas_after_1").value = meas.meas_after[0] || "";
+						$.$("meas_after_2").value = meas.meas_after[1] || "";
+						$.$("meas_after_3").value = meas.meas_after[2] || "";
+
 						this.analysis.load(measdata);
 						this.analysis.drawList($.$("abp_meas_list"));
 						this.analysis.draw();
@@ -1856,6 +1987,31 @@
 			} catch(e) {
 				$.error("open meas error: %e", e);
 			}
+		},
+
+		s2time: function(s) {
+			var time = [];
+			if (s) {
+				var a = s.split(";");
+				for (var i = 0; i < a.length; i += 2) {
+					time.push(a[i] + ":" + ((a[i + 1] || "").length == 1 ? "0" : "") + a[i + 1]);
+				}
+			}
+			return time;
+		},
+
+		time2s: function(time) {
+		},
+
+		s2abp: function(s) {
+			var abp = [];
+			if (s) {
+				var a = s.split(";");
+				for (var i = 0; i < a.length; i += 2) {
+					abp.push(a[i] != "0" && a[i + 1] != "0" ? a[i] + "/" + a[i + 1] : "");
+				}
+			}
+			return abp;
 		},
 
 		make_card_info: function(info, terminal, patient) {
@@ -2101,6 +2257,7 @@
 			$.toggle(block == "card_monitor", "card_monitor");
 			$.toggle(block == "card_test", "card_test");
 			$.toggle(block == "terminal", "terminal_info");
+			// $.toggle(block == "main", "new_measurements");
 		},
 
 		monitor_read: function() {
@@ -2176,7 +2333,7 @@
 			dia_abp: ["ДАД", "Lower"],
 			pulse_abp: ["ПАД", "Diff"],
 			rate: ["ЧСС", "Rate"],
-			rate2: ["Частота сердечных сокращений", "Heart rate"],
+			rate2: ["Частота пульса", "Heart rate"],
 			time: ["Время", "Time"],
 			error: ["Ошибка", "Err"],
 			error2: ["Ошибка", "Error"],
@@ -2266,7 +2423,7 @@
 			card_conclusion: ["Заключение по суточному мониторированию СМАД #", "Daily monitoring conclusion #"],
 			report: ["Отчет", "Report"],
 			daily_index: ["Суточный индекс", "Daily index"],
-			morning_speed: ["Скорость утреннего повышения", "Morning increase speed"],
+			morning_speed: ["Скорость утреннего повышения", "Morning increase"],
 			hypertension: ["гиперт.", "Hypertension"],
 			hypotension: ["гипот.", "Hypotension"],
 			pressure_load: ["Индекс времени", "Pressure load"],
@@ -2282,6 +2439,11 @@
 			meas_date: ["Дата мониторирования", "Monitoring date"],
 			weight_index: ["Индекс массы тела", "Weight index"],
 			hip_waist_index: ["Индекс \"талия-бедро\"", "Hip-waist index"],
+			send: ["Отправить на рассмотрение", "Send on review"],
+			send_confirm: ["Отправить мониторирование на рассмотрение?", "Send measurement on review?"],
+			mark_reviewed: ["Завершить анализ", "Finish review"],
+			confirm_reviewed: ["Завершить анализ мониторирования?", "Finish monitoring review?"],
+			new_measurements: ["Новые измерения:", "New measurements:"],
 		}
 
 	});

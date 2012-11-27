@@ -67,7 +67,7 @@ my $loc = {
 	do_load => ["Загрузить данные", "Download data"],
 	test_meas => ["Пробный замер", "Test measurement"],
 	daily_index => ["Суточный индекс", "Daily index"],
-	morning_speed => ["Скорость утреннего повышения", "Morning increase speed"],
+	morning_speed => ["Скорость утреннего повышения", "Morning increase"],
 	exit => ["Выход", "Exit"],
 	save => ["Сохранить", "Save"],
 	hypertension_grade => ["Степень артериальной гипертензии", "Hypertension grade"],
@@ -98,6 +98,16 @@ my $loc = {
 	diag_inactivity => ["Малоподвижной образ жизни", "Inactivity"],
 	risk_grade => ["Степень риска", "Risk grade"],
 	insult_risk => ["Риск инсульта или инфаркта миокарда в ближайшие 10 лет", "Insult risk"],
+	time_sleep => ["Время отхода ко сну", "Sleep time"],
+	time_wake_up => ["Время пробуждения", "Wake up time"],
+	time_breakfast => ["Время завтрака", "Breakfast time"],
+	time_lunch => ["Время обеда", "Lunch time"],
+	time_dinner => ["Время ужина", "Dinner time"],
+	test_meas_before => ["Контрольные замеры до мониторирования", "Measurements before monitoring"],
+	test_meas_after => ["Контрольные замеры после мониторирования", "Measurements after monitoring"],
+	meas_comment => ["Комментарий к измерению", "Monitoring comment"],
+	meas_conclusion => ["Заключение", "Conclusion"],
+	report_results => ["Результаты суточного мониторирования АД", "Daily monitoring results"],
 };
 
 my $lang = CGI::http('Accept-language') =~ /^ru/ ? "ru" : "en";

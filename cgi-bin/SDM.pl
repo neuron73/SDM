@@ -135,6 +135,18 @@ sub send_mail {
 	$msg->send;
 }
 
+sub format_patients {
+	my $sth = shift;
+	my @list;
+	while (my $row = $sth->fetchrow_hashref()) {
+		push @list, {
+			name => "$row->{family} $row->{name} $row->{surname}",
+			id => $row->{n_kart}
+		};
+	}
+	return \@list;
+}
+
 my @info_keys = qw(family name surname burthday policy_series policy_number sex marital_status social_status education employment profession post city street house_number house_korpus house_unit_number house_phone business_phone rost ves bedro talia dispensary_group f_riska por_org_mish sah_diabet stepen_ag soput_zab);
 
 # print "Content-type: text/html; charset=UTF-8\n\n"; print $query; exit;
@@ -318,7 +330,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 	my $n_kart = int($q->param("patient"));
 	my $sth = $dbh->prepare(
-		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment, diagnosis from $TABLE->{sessions} " .
+		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment, diagnosis, tst_izm_do as meas_before, tst_izm_pos as meas_after, time_dream as sleep_time, time_eat as dinner_time, date_loaded as request_time, date_sending as review_time from $TABLE->{sessions} " .
 		"where n_terminal = $n_terminal and n_kart = $n_kart order by pac_measID"
 	);
 	$sth->execute();
@@ -343,20 +355,13 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 } elsif ($query eq "patients") {
 	print $header;
 
-	my @list;
 	my $n_terminal = int($q->param("terminal"));
 
 	error("Access Denied") unless $USER eq "admin" or $USER_TERMINAL == $n_terminal;
 
 	my $sth = $dbh->prepare("select n_kart, family, name, surname from $TABLE->{patients} where n_terminal = $n_terminal ORDER BY family");
 	$sth->execute();
-	while (my $row = $sth->fetchrow_hashref()) {
-		push @list, {
-			name => "$row->{family} $row->{name} $row->{surname}",
-			id => $row->{n_kart}
-		};
-	}
-	$result = \@list;
+	$result = format_patients($sth);
 
 } elsif ($query eq "patient") {
 	print $header;
@@ -503,6 +508,56 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $sth = $dbh->prepare("update $TABLE->{sessions} SET coment = ? where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
 	my $success = $sth->execute($comment);
 	$result = {success => $success ? 1 : 0};
+
+} elsif ($query eq "send_meas") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+
+	error("Access Denied") unless $USER_TERMINAL == $n_terminal;
+
+	my $sth = $dbh->prepare("update $TABLE->{sessions} SET date_loaded = NOW() where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
+	my $success = $sth->execute();
+	$result = {success => $success ? 1 : 0};
+
+} elsif ($query eq "mark_reviewed") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+
+	error("Access Denied") unless $USER eq "admin";
+
+	my $sth = $dbh->prepare("update $TABLE->{sessions} SET date_sending = NOW() where n_terminal = $n_terminal and n_kart = $n_patient and n_meas = $n_meas");
+	my $success = $sth->execute();
+	$result = {success => $success ? 1 : 0};
+
+} elsif ($query eq "get_requests") {
+
+	print $header;
+
+	error("Access Denied") unless $USER eq "admin";
+
+	my $sth = $dbh->prepare("select $TABLE->{sessions}.n_terminal, $TABLE->{sessions}.n_kart, n_meas, family, name, surname from $TABLE->{sessions} INNER JOIN $TABLE->{patients} ON $TABLE->{sessions}.n_terminal = $TABLE->{patients}.n_terminal AND $TABLE->{sessions}.n_kart = $TABLE->{patients}.n_kart WHERE NOT ISNULL(date_loaded) AND ISNULL(date_sending)");
+	my $success = $sth->execute();
+
+	my @list;
+
+	while (my $row = $sth->fetchrow_hashref()) {
+		push @list, {
+			name => "$row->{family} $row->{name} $row->{surname}",
+			terminal => $row->{n_terminal},
+			patient => $row->{n_kart},
+			meas => $row->{n_meas}
+		};
+	}
+
+	$result = \@list;
 
 } elsif ($query eq "save_conclusion") {
 
