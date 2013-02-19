@@ -1106,7 +1106,7 @@
 						items.push([meas.name, meas]);
 					}
 				});
-				this.menus.measurements.update(items);
+				this.menus.measurements["АД"].update(items);
 			}));
 			this.onEvent("add_patient", $.F(this, function() {
 				this.block_main("card_info");
