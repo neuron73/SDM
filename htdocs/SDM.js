@@ -1294,11 +1294,10 @@
 			$.$("auth_user_name").innerHTML = name;
 			if (AUTH.user != "admin") {
 				$.hide("tab_terminals");
-			} else {
-				this.requests = this.query({
-					query: "get_requests"
-				});
 			}
+			this.requests = this.query({
+				query: "get_requests"
+			});
 			this.show_terminals();
 
 			this.navigation.init();
@@ -1462,18 +1461,25 @@
 
 					var menu2 = this.menus.new_meas = this.menus.new_meas || new Menu("new_measurements", $.F(this, function(title, meas) {
 						if (meas.id != -1) {
+							if (AUTH.user != "admin") {
+								this.post({
+									query: "mark_viewed",
+									patient: meas.patient,
+									meas: meas.meas
+								});
+							}
 							this.navigation.open(null, {type: "patient", id: meas.patient, title: $.utf8.decode(meas.name)}, {type: "meas", id: meas.meas});
 						}
 					}));
 					var items2 = [
-						[loc.new_measurements, {id: -1}],
+						[AUTH.user == "admin" ? loc.new_measurements : loc.reviewed_measurements, {id: -1}],
 						null
 					];
 					var terminals = this.cache.get("terminal");
 					var count;
 					$.every(terminals, function(terminal) {
 						if (terminal && terminal.id == item.id) {
-							count = terminal.requests.length;
+							count = (terminal.requests || []).length;
 							$.every(terminal.requests || [], function(meas) {
 								items2.push([$.utf8.decode(meas.name) + ", #" + meas.meas, meas]);
 							});
@@ -1528,14 +1534,15 @@
 							var items = [
 								[loc.analysis, "analyze"],
 								[loc.conditions, "monitoring"],
+								// [loc.events, "events"],
 								[loc.comment, "comment"],
 							];
 
 							if (AUTH.user != "admin") {
 								if (meas.review_time != null) {
 									items = items.concat([
-										[loc.conclusion, "conclusion"],
 										[loc.report, "report"],
+										[loc.conclusion, "conclusion"],
 									]);
 								} else if (meas.request_time == null) {
 									items = items.concat([
@@ -1544,8 +1551,8 @@
 								}
 							} else {
 								items = items.concat([
-									[loc.conclusion, "conclusion"],
 									[loc.report, "report"],
+									[loc.conclusion, "conclusion"],
 								]);
 								if (meas.request_time != null && meas.review_time == null) {
 									items = items.concat([
@@ -1596,6 +1603,7 @@
 
 					$.every(measlist, function(meas) {
 						if (meas) {
+							meas.type = meas.type || "АД";
 							items[meas.type].push([meas.name, meas, function(element) { // click callback
 								if (active_meas) {
 									meas_submenu[active_meas_type].parentNode.removeChild(meas_submenu[active_meas_type]);
@@ -1695,6 +1703,10 @@
 					$.hide("abp_meas_list");
 					$.hide("abp_canvas");
 					$.show("abp_report");
+				} else if (this.panel == "events") {
+					$.show("abp_meas_list");
+					$.hide("abp_canvas");
+					$.hide("abp_report");
 				} else {
 					$.show("tab_menu");
 					$.$("header").style.display = "inline";
@@ -1991,7 +2003,7 @@
 
 		s2time: function(s) {
 			var time = [];
-			if (s) {
+			if (s && s.match(/\S+/)) {
 				var a = s.split(";");
 				for (var i = 0; i < a.length; i += 2) {
 					time.push(a[i] + ":" + ((a[i + 1] || "").length == 1 ? "0" : "") + a[i + 1]);
@@ -2444,6 +2456,8 @@
 			mark_reviewed: ["Завершить анализ", "Finish review"],
 			confirm_reviewed: ["Завершить анализ мониторирования?", "Finish monitoring review?"],
 			new_measurements: ["Новые измерения:", "New measurements:"],
+			reviewed_measurements: ["Рассмотренные измерения:", "Reviewed measurements:"],
+			events: ["События", "Events"],
 		}
 
 	});

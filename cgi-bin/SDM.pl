@@ -537,13 +537,32 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 	my $success = $sth->execute();
 	$result = {success => $success ? 1 : 0};
 
+} elsif ($query eq "mark_viewed") {
+
+	print $header;
+
+	my $n_patient = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+
+	error("Access Denied") if $USER eq "admin";
+
+	my $sth = $dbh->prepare("update $TABLE->{sessions} SET date_loaded = NOW() where n_terminal = $USER_TERMINAL and n_kart = $n_patient and n_meas = $n_meas");
+	my $success = $sth->execute();
+	$result = {success => $success ? 1 : 0};
+
 } elsif ($query eq "get_requests") {
 
 	print $header;
 
-	error("Access Denied") unless $USER eq "admin";
+	my $condition;
 
-	my $sth = $dbh->prepare("select $TABLE->{sessions}.n_terminal, $TABLE->{sessions}.n_kart, n_meas, family, name, surname from $TABLE->{sessions} INNER JOIN $TABLE->{patients} ON $TABLE->{sessions}.n_terminal = $TABLE->{patients}.n_terminal AND $TABLE->{sessions}.n_kart = $TABLE->{patients}.n_kart WHERE NOT ISNULL(date_loaded) AND ISNULL(date_sending)");
+	if ($USER eq "admin") {
+		$condition = "NOT ISNULL(date_loaded) AND ISNULL(date_sending)";
+	} else {
+		$condition = "$TABLE->{sessions}.n_terminal = $USER_TERMINAL AND NOT ISNULL(date_sending) AND date_loaded < date_sending";
+	}
+
+	my $sth = $dbh->prepare("select $TABLE->{sessions}.n_terminal, $TABLE->{sessions}.n_kart, n_meas, family, name, surname from $TABLE->{sessions} INNER JOIN $TABLE->{patients} ON $TABLE->{sessions}.n_terminal = $TABLE->{patients}.n_terminal AND $TABLE->{sessions}.n_kart = $TABLE->{patients}.n_kart WHERE $condition");
 	my $success = $sth->execute();
 
 	my @list;

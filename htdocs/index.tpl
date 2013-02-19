@@ -362,6 +362,7 @@
 																					</select>
 																				</td>
 																			</tr>
+																			<!--
 																			<tr>
 																				<td>
 																					[% phys_load %]:
@@ -388,6 +389,7 @@
 																					</select>
 																				</td>
 																			</tr>
+																			-->
 																			<tr>
 																				<td>
 																					[% time_sleep %]:
