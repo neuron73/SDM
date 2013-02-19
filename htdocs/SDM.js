@@ -186,16 +186,18 @@
 						var duration = (intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60;
 						$.every(intervals, function(interval) {
 							var points = interval.polygon;
-							var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
 							if (points) {
+								var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
 								// console.log(interval);
 								var area;
-								var under = key2 == "systolic";
+								var under = key3 == "hypo";
 								if (points.length == 3) { //площадь треугольника
 									var _ = points, bottom_left = _[0], bottom_right = _[1], top = _[2];
-									var y_top = top[1];
-									var y_bottom = bottom_left[1];
-									area = width * Math.abs(y_top - y_bottom) / 2;
+									var height = Math.abs(top[1] - bottom_left[1]);
+									var w = (Math.max(bottom_left[0], bottom_right[0], top[0]) - Math.min(bottom_left[0], bottom_right[0], top[0])) / 1000 / 60 / 60;
+									area = w * height / 2;
+									blood_pressure_load += w;
+									// console.log("%d/%d", w, width);
 								} else if (points.length == 4) { // площадь четырехугольника
 									var _ = points, bottom_left = _[0], bottom_right = _[1], top_right = _[2], top_left = _[3];
 									var y0 = bottom_left[1]; // граница
@@ -204,8 +206,8 @@
 									var y1 = under ? y_min : y_max;
 									var y2 = under ? y_max : y_min;
 									area = width * Math.abs(y1 - y0) + width * Math.abs(y2 - 1) / 2;
+									blood_pressure_load += width;
 								}
-								blood_pressure_load += width;
 								area_under_curve += area;
 							}
 						});
@@ -651,8 +653,8 @@
 
 			this.area_under_curve = {
 				systolic_hyper:		this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hyper.day,	this.border.systolic_hyper.night,	true),
-				systolic_hypo:		this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hyper.day,	this.border.diastolic_hyper.night,	true),
-				diastolic_hyper:	this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hypo,		this.border.systolic_hypo,		false),
+				diastolic_hyper:	this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hyper.day,	this.border.diastolic_hyper.night,	true),
+				systolic_hypo:		this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hypo,		this.border.systolic_hypo,		false),
 				diastolic_hypo:		this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hypo,		this.border.diastolic_hypo,		false),
 				pulse_high:		this.get_area_under_curve(this.pulse,		this.day_intervals, this.border.pulse_high.day,		this.border.pulse_high.night,		true),
 				pulse_low:		this.get_area_under_curve(this.pulse,		this.day_intervals, this.border.pulse_low,		this.border.pulse_low,			false),
@@ -785,8 +787,8 @@
 
 			// индекс площади
 			this.plot_area_under_curve(this.area_under_curve.systolic_hyper,	"#ffcccc", this.abp2y);
-			this.plot_area_under_curve(this.area_under_curve.systolic_hypo,		"#ffcccc", this.abp2y);
-			this.plot_area_under_curve(this.area_under_curve.diastolic_hyper,	"#ccccff", this.abp2y);
+			this.plot_area_under_curve(this.area_under_curve.systolic_hypo,		"#ccccff", this.abp2y);
+			this.plot_area_under_curve(this.area_under_curve.diastolic_hyper,	"#ffcccc", this.abp2y);
 			this.plot_area_under_curve(this.area_under_curve.diastolic_hypo,	"#ccccff", this.abp2y);
 			this.plot_area_under_curve(this.area_under_curve.pulse_high,		"#ffcccc", this.pulse2y);
 			this.plot_area_under_curve(this.area_under_curve.pulse_low,		"#ccccff", this.pulse2y);
@@ -1085,6 +1087,7 @@
 			target_organ: $.qw("hypertrophy proteinuria atherosclerosis retina"),			// ПОМ - поражение органов-мишеней
 			clinical_conditions: $.qw("cerebrovascular cardio renal vascular retinopathy")	// АКС - ассоциированные клинические состояния
 		},
+		risk_factor_keys: ["", "P", "O", "1", "3", "8"],
 
 		initialize: function(backend, cgi_bin) {
 			this.backend = backend;
@@ -1147,7 +1150,7 @@
 			}));
 			this.onEvent("update_analysis", $.F(this, this.draw_analysis, ["abp_analyze_table1"]));
 			this.onEvent("resize", $.F(this, function() {
-				var left_menu_width = 300;
+				var left_menu_width = 265;
 				var meas_list_width = 300;
 				var padding = 20;
 
@@ -1520,8 +1523,6 @@
 						this.menus.measurements[type].update(items[type]);
 					}, this);
 
-					this.grade_update();
-
 					$.show("card");
 					this.block_main("card");
 				} else {
@@ -1547,10 +1548,10 @@
 			var measlist = [];
 			var list = this.query({query: "measlist", terminal: terminal, patient: patient});
 			$.each(list, function(meas) {
-				var date = $.utf8.decode(meas.date || "").split(/[\ :-]/).slice(0, 3).reverse();
+				var date = $.utf8.decode(meas.date || "").split(/[\ :-]+/).slice(0, 3).reverse();
 				if (!isFinite(Number(date[2]))) {
 					var month = date[2];
-					date[2] = date[1];
+					date[2] = (Number(date[1]) < 10 ? "0" : "") + date[1];
 					date[1] = MONTHS[month];
 				}
 				meas.type = $.utf8.decode(meas.type);
@@ -1604,19 +1605,28 @@
 		generate_report: function(container, path) {
 			var info = this.get_patient_info(path.terminal, path.patient);
 			var meas = this.cache.get("meas", [path.terminal, path.patient, path.meas]);
+
+			function format(n, digits) {
+				digits = Math.pow(10, digits);
+				if (isFinite(n))
+					return String(Math.round(n * digits) / digits);
+				return "-";
+			}
+
 			// console.log(path);
 			// console.log(meas);
+			var gender = $.utf8.decode(String(info.sex || ""));
 			var report = {
 				n: path.patient,
 				patient: info.name + " " + info.surname + " " + info.family,
-				sex: info.sex ? (info.sex == 1 ? "мужской" : "женский") : "-",
+				sex: gender == "МУЖ" ? loc.male : (gender == "ЖЕН" ? loc.female : "-"),
 				dob: info.burthday,
 				weight: info.ves,
 				height: info.rost,
 				age: "-",
 				hip: info.bedro,
 				waist: info.talia,
-				hip_waist_index: String(info.bedro > 0 && info.talia > 0 ? info.talia / info.bedro : 0),
+				hip_waist_index: format(info.bedro > 0 && info.talia > 0 ? info.talia / info.bedro : 0, 2),
 				weight_index: String(info.ves > 0 && info.rost > 0 ? Math.round(info.ves / info.rost / info.rost * 10000) : 0),
 				meas_date: meas.date + " " + meas.time,
 			};
@@ -1633,13 +1643,6 @@
 			report_graph.resize(1000, 700);
 			report_graph.update(this.analysis.systolic, this.analysis.diastolic, this.analysis.time, this.analysis.pulse, this.analysis.errors, this.analysis.artefacts);
 			report_graph.plot();
-
-			function format(n, digits) {
-				digits = Math.pow(10, digits);
-				if (isFinite(n))
-					return String(Math.round(n * digits) / digits);
-				return "-";
-			}
 
 			var rows = [["№", "Время", "САД", "ДАД", "ПАД", "ЧСС", "Ошибка", "Двойное произведение", "Критерий S", "Индекс Кердо"]];
 			var a = this.analysis;
@@ -1736,7 +1739,6 @@
 					header2 = header2.concat(["САД", "ДАД"]);
 					header3 = header3.concat(["гиперт.", "гипот.", "гипер.", "гипот."]);
 				});
-
 				var line1 = ["Индекс времени"];
 				var line2 = ["Индекс площади"];
 				$.every(periods, function(period) {
@@ -1918,7 +1920,7 @@
 
 			$.every(fields, function(field) {
 				var title = field[0];
-				var value = info ? $.utf8.decode(String(info[field[1]]) || "") : "";
+				var value = info ? $.utf8.decode(String(info[field[1]] || "")) : "";
 				var type = field[2];
 				var control;
 				if (type == null || type == "date" || type == "numeric") {
@@ -1978,18 +1980,20 @@
 
 		diagnosis_load: function(terminal, patient) {
 			var info = this.get_patient_info(terminal, patient);
+
 			$.$("hypertension_grade").value = info.stepen_ag;
 
 			$.every(this.diagnosis_types.clinical_conditions, function(key, i) {
-				$.$("ah_" + key).checked = info.soput_zab && info.soput_zab.match(String(i));
-			});
+				$.$("ah_" + key).checked = info.soput_zab && info.soput_zab.match(String(i + 1));
+			}, this);
 			$.every(this.diagnosis_types.target_organ, function(key, i) {
-				$.$("ah_" + key).checked = info.por_org_mish && info.por_org_mish.match(String(i));
-			});
+				$.$("ah_" + key).checked = info.por_org_mish && info.por_org_mish.match(String(i + 1));
+			}, this);
 			$.every(this.diagnosis_types.risk_factor, function(key, i) {
-				$.$("ah_" + key).checked = info.f_riska && info.f_riska.match(String(i + 1));
-			});
-			$.$("ah_diabetes").checked = info.sah_diabet;
+				$.$("ah_" + key).checked = info.f_riska && info.f_riska.match(new RegExp("[" + this.risk_factor_keys[i] + "]"));
+			}, this);
+			$.$("ah_diabetes").checked = info.sah_diabet.match(/^[ZU]$/);
+			this.grade_update();
 		},
 
 		diagnosis_save: function(terminal, patient) {
@@ -1999,15 +2003,15 @@
 				f_riska: ""
 			};
 			$.every(this.diagnosis_types.clinical_conditions, function(key, i) {
-				info.soput_zab += $.$("ah_" + key).checked ? String(i) : "";
-			});
+				info.soput_zab += $.$("ah_" + key).checked ? String(i + 1) : "";
+			}, this);
 			$.every(this.diagnosis_types.target_organ, function(key, i) {
-				info.por_org_mish += $.$("ah_" + key).checked ? String(i) : "";
-			});
+				info.por_org_mish += $.$("ah_" + key).checked ? String(i + 1) : "";
+			}, this);
 			$.every(this.diagnosis_types.risk_factor, function(key, i) {
-				info.f_riska = $.$("ah_" + key).checked ? String(i + 1) : "";
-			});
-			info.sah_diabet = $.$("ah_diabetes").checked ? "1" : "";
+				info.f_riska += $.$("ah_" + key).checked ? this.risk_factor_keys[i] : "";
+			}, this);
+			info.sah_diabet = $.$("ah_diabetes").checked ? "Z" : " ";
 			// TODO: save
 		},
 

@@ -496,13 +496,13 @@
 									<div id="card_diagnosis" style="display: none; padding: 20px;">
 										[% hypertension_grade %]:
 										<select id="hypertension_grade" onchange="grade_update()">
-											<option value="-1">[% hg_not_defined %]</option>
-											<option value="0">[% hg_optimal %]</option>
-											<option value="1">[% hg_normal %]</option>
-											<option value="2">[% hg_high %]</option>
-											<option value="3">[% hg_grade1 %]</option>
-											<option value="4">[% hg_grade2 %]</option>
-											<option value="5">[% hg_grade3 %]</option>
+											<option value="">[% hg_not_defined %]</option>
+											<option value="-2">[% hg_optimal %]</option>
+											<option value="-1">[% hg_normal %]</option>
+											<option value="0">[% hg_high %]</option>
+											<option value="1">[% hg_grade1 %]</option>
+											<option value="2">[% hg_grade2 %]</option>
+											<option value="3">[% hg_grade3 %]</option>
 										</select>
 										<br />
 										<br />
