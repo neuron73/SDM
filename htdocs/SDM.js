@@ -186,16 +186,18 @@
 						var duration = intervals.length ? ((intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60) : 1;
 						$.every(intervals, function(interval) {
 							var points = interval.polygon;
-							var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
 							if (points) {
+								var width = (interval.to - interval.from) / 1000 / 60 / 60; // мс. => ч.
 								// console.log(interval);
 								var area;
-								var under = key2 == "systolic";
+								var under = key3 == "hypo";
 								if (points.length == 3) { //площадь треугольника
 									var _ = points, bottom_left = _[0], bottom_right = _[1], top = _[2];
-									var y_top = top[1];
-									var y_bottom = bottom_left[1];
-									area = width * Math.abs(y_top - y_bottom) / 2;
+									var height = Math.abs(top[1] - bottom_left[1]);
+									var w = (Math.max(bottom_left[0], bottom_right[0], top[0]) - Math.min(bottom_left[0], bottom_right[0], top[0])) / 1000 / 60 / 60;
+									area = w * height / 2;
+									blood_pressure_load += w;
+									// console.log("%d/%d", w, width);
 								} else if (points.length == 4) { // площадь четырехугольника
 									var _ = points, bottom_left = _[0], bottom_right = _[1], top_right = _[2], top_left = _[3];
 									var y0 = bottom_left[1]; // граница
@@ -204,8 +206,8 @@
 									var y1 = under ? y_min : y_max;
 									var y2 = under ? y_max : y_min;
 									area = width * Math.abs(y1 - y0) + width * Math.abs(y2 - 1) / 2;
+									blood_pressure_load += width;
 								}
-								blood_pressure_load += width;
 								area_under_curve += area;
 							}
 						});
@@ -654,8 +656,8 @@
 
 			this.area_under_curve = {
 				systolic_hyper:		this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hyper.day,	this.border.systolic_hyper.night,	true),
-				systolic_hypo:		this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hyper.day,	this.border.diastolic_hyper.night,	true),
-				diastolic_hyper:	this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hypo,		this.border.systolic_hypo,		false),
+				diastolic_hyper:	this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hyper.day,	this.border.diastolic_hyper.night,	true),
+				systolic_hypo:		this.get_area_under_curve(this.systolic,	this.day_intervals, this.border.systolic_hypo,		this.border.systolic_hypo,		false),
 				diastolic_hypo:		this.get_area_under_curve(this.diastolic,	this.day_intervals, this.border.diastolic_hypo,		this.border.diastolic_hypo,		false),
 				pulse_high:		this.get_area_under_curve(this.pulse,		this.day_intervals, this.border.pulse_high.day,		this.border.pulse_high.night,		true),
 				pulse_low:		this.get_area_under_curve(this.pulse,		this.day_intervals, this.border.pulse_low,		this.border.pulse_low,			false),
@@ -788,8 +790,8 @@
 
 			// индекс площади
 			this.plot_area_under_curve(this.area_under_curve.systolic_hyper,	"#ffcccc", this.abp2y);
-			this.plot_area_under_curve(this.area_under_curve.systolic_hypo,		"#ffcccc", this.abp2y);
-			this.plot_area_under_curve(this.area_under_curve.diastolic_hyper,	"#ccccff", this.abp2y);
+			this.plot_area_under_curve(this.area_under_curve.systolic_hypo,		"#ccccff", this.abp2y);
+			this.plot_area_under_curve(this.area_under_curve.diastolic_hyper,	"#ffcccc", this.abp2y);
 			this.plot_area_under_curve(this.area_under_curve.diastolic_hypo,	"#ccccff", this.abp2y);
 			this.plot_area_under_curve(this.area_under_curve.pulse_high,		"#ffcccc", this.pulse2y);
 			this.plot_area_under_curve(this.area_under_curve.pulse_low,		"#ccccff", this.pulse2y);
