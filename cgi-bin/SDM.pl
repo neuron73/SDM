@@ -94,11 +94,11 @@ sub import_result_abp {
 		$sth->execute();
 	}
 
-	if ($n_points > 0) {
+	# if ($n_points > 0) {
 		my $time = strftime "%Y-%m-%d %H:%M:%S", localtime;
 		$sth = $dbh->prepare("insert into $TABLE->{sessions} (n_terminal, n_kart, n_meas, type_meas, m_date) values ($n_terminal, $n_patient, $n_meas, '$type', '$time')");
 		$sth->execute();
-	}
+	# }
 	return $n_points;
 }
 
