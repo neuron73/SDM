@@ -509,7 +509,9 @@
 								submenu.update(get_submenu(active_meas));
 							}
 						} else {
-							this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
+							// this.navigation.open(null, null, current_meas, {type: "panel", id: id, title: title});
+							var nav = this.navigation;
+							nav.go("#terminal:%s,patient:%s,meas:%s,panel:%s", nav.get("terminal"), nav.get("patient"), this.last_open_meas, id);
 						}
 					}));
 
@@ -856,6 +858,18 @@
 			try {
 				this.open_tab(null);
 				if (item) {
+					// выделение пункта меню
+					var menu = this.menus.measurements["АД"]; // TODO: ЭКГ??
+					var selected = -1;
+					$.every(menu.items, function(_item, i) {
+						if (_item[1].id == item.id)
+							selected = i;
+					});
+					if (selected != -1) {
+						menu.items[selected][2](menu.elements[selected]);
+					}
+
+					this.last_open_meas = item.id;
 					var meas = this.cache.get("meas", [path.terminal, path.patient, item.id]);
 					var measdata = this.get_meas_data(path.terminal, path.patient, item.id);
 					$.toggle(meas.type == "АД", "card_meas_abp");

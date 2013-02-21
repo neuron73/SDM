@@ -53,6 +53,7 @@
 		},
 
 		go: function(location) {
+			location = $.sprintf.apply($, $.args(arguments));
 			var path = (this.location = location).substr(1).split(",");
 			var code = [];
 			$.every(path, function(item, i) {

@@ -13,11 +13,12 @@
 			var self = this;
 			this.clear();
 			this.items = items;
-			$.every(items, function(item) {
+			this.elements = {};
+			$.every(items, function(item, i) {
 				if (item == null) { // delimiter
 					this.container.appendChild($.e("div", {'class': "delimiter"}));
 				} else {
-					var e = $.e("a");
+					var e = this.elements[i] = $.e("a");
 					e.href = "";
 					e.onclick = function() {
 						self.callback(item[0], item[1]);
