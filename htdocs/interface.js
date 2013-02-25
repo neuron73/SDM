@@ -418,6 +418,9 @@
 						menu2.clear();
 
 					this.block_main("terminal");
+					$.show("tab_patients");
+				} else {
+					$.hide("tab_patients");
 				}
 			} catch(e) {
 				$.error("open terminal error: %e", e);
@@ -434,7 +437,7 @@
 				this.open_meas(null);
 				$.clear("patient_name");
 				$.hide("card");
-				this.block_main(null);
+				// this.block_main(null);
 				if (path && path.terminal && path.patient) {
 					this.list_view(false);
 					// $.hide("terminals", "patients");
@@ -856,8 +859,10 @@
 
 		open_meas: function(item, path) {
 			try {
-				this.open_tab(null);
 				if (item) {
+					// this.open_tab(null);
+					this.block_main("card_meas");
+
 					// выделение пункта меню
 					var menu = this.menus.measurements["АД"]; // TODO: ЭКГ??
 					var selected = -1;
@@ -1137,33 +1142,6 @@
 					this.make_card_info(info, path.terminal, path.patient);
 				} else if (item && item.id == "diagnosis") {
 					this.diagnosis_load(path.terminal, path.patient);
-/*
-					var fields = [
-						["Сопутствующие заболевания", "soput_zab", 0],
-						["Сахарный диабет", "sah_diabet", 0],
-						["Поражение органов мишеней", "por_org_mish", 0],
-						["Факторы риска", "f_riska", 0],
-						["Употребление алкоголя", "", 0],
-						["Курение", "", 0],
-						["Холестерин", "", 0],
-						["Уровень стрессов", "", 0],
-						["Физическая активность", "", 0],
-					];
-					var container = $.clear("card_diagnosis");
-					var rows = [];
-					var chomp = function(s) {
-						return (s || "").replace(/^\s+/, "").replace(/\s+$/, "");
-					};
-					$.every(fields, function(field) {
-						var title = field[0];
-						var value = $.utf8.decode(info[field[1]] || "");
-						rows.push([
-							$.span(title + ":"),
-							$.e("input", {type: "text", value: chomp(value), readonly: "readonly", style: {width: 200}})
-						]);
-					});
-					container.appendChild($.table.apply($, rows));
-*/
 				} else if (item && item.id == "monitor") {
 					card_monitoring_update();
 				} else if (item && item.id == "test") {
@@ -1176,7 +1154,8 @@
 				} else if (item && item.id == "history") {
 					this.make_history(path);
 				}
-				this.block_main(item == null ? "card_meas" : "card_" + item.id);
+				// this.block_main(item == null ? "card_meas" : "card_" + item.id);
+				if (item != null) this.block_main("card_" + item.id);
 			} catch(e) {
 				$.error("open tab error: %e", e);
 			}
@@ -1201,7 +1180,6 @@
 		},
 
 		block_main: function(block) {
-			// console.log(block)
 			$.toggle((block || "").substr(0, 4) == "card", "card_data");
 			$.toggle(block == "card_meas", "card_meas");
 			$.toggle(block == "card_history", "card_history");

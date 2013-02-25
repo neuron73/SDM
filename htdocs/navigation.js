@@ -34,12 +34,13 @@
 					} else if (arguments[i] !== false) {
 						continue;
 					}
-					if (arguments[i + 1] == null) {
+					if (arguments[i + 1] == null || arguments[i + 1] == undefined) {
 						for (i = i + 1; i < this.sections.length; i++) {
 							var section = this.sections[i];
 							if (section) {
 								this.handlers[section.type](null);
-								this.sections[i] = null;
+								// this.sections[i] = null;
+								delete this.sections[i];
 							}
 						}
 					}
@@ -50,6 +51,16 @@
 			} catch(e) {
 				$.warn("open error: %e", e);
 			}
+		},
+
+		home: function() {
+			for (i = 0; i < this.sections.length; i++) {
+				if (this.sections[i]) {
+					this.handlers[this.sections[i].type](null);
+					delete this.sections[i];
+				}
+			}
+			this.draw();
 		},
 
 		go: function(location) {
@@ -113,7 +124,7 @@
 			try {
 				var self = this;
 				$.clear(this.container);
-				this.container.appendChild($.e("a", {href: "", onclick: function() { self.open(false); return false; }}, loc.main));
+				this.container.appendChild($.e("a", {href: "", onclick: function() { self.home(); return false; }}, loc.main));
 				var code = [];
 				$.every(this.sections, function(section, i) {
 					if (!section)
