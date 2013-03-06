@@ -330,7 +330,7 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 
 	my $n_kart = int($q->param("patient"));
 	my $sth = $dbh->prepare(
-		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment, diagnosis, tst_izm_do as meas_before, tst_izm_pos as meas_after, time_dream as sleep_time, time_eat as dinner_time, date_loaded as request_time, date_sending as review_time from $TABLE->{sessions} " .
+		"select n_meas as id, type_meas as type, file_name_data as record, m_date as date, m_time as time, coment as comment, diagnosis, tst_izm_do as meas_before, tst_izm_pos as meas_after, time_dream as sleep_time, time_eat as dinner_time, date_loaded as request_time, date_sending as review_time, meas_cond as conditions from $TABLE->{sessions} " .
 		"where n_terminal = $n_terminal and n_kart = $n_kart order by pac_measID"
 	);
 	$sth->execute();
@@ -351,6 +351,29 @@ if ($query eq "add_meas" && $q->request_method() eq "POST") {
 		$sth->execute();
 		$result = $sth->fetchall_arrayref();
 	}
+
+} elsif ($query eq "save_meas") {
+
+	print $header;
+
+	my $n_terminal = int($q->param("terminal"));
+	my $n_kart = int($q->param("patient"));
+	my $n_meas = int($q->param("meas"));
+
+	error("Access Denied") unless $USER eq "admin" or $USER_TERMINAL == $n_terminal;
+
+	my $meas_before = $q->param("meas_before");
+	my $meas_after = $q->param("meas_after");
+	my $sleep_time = $q->param("sleep_time");
+	my $dinner_time = $q->param("dinner_time");
+	my $request_time = $q->param("request_time");
+	my $review_time = $q->param("review_time");
+	my $conditions = $q->param("conditions");
+
+	my $query = "update $TABLE->{sessions} set tst_izm_do = '$meas_before', tst_izm_pos = '$meas_after', time_dream = '$sleep_time', time_eat = '$dinner_time', date_loaded = '$request_time', date_sending = '$review_time', meas_cond = '$conditions' where n_terminal = $n_terminal and n_kart = $n_kart and n_meas = $n_meas LIMIT 1";
+	my $sth = $dbh->prepare($query);
+	my $r = $sth->execute();
+	$result = {result => $r ? 1 : 0};
 
 } elsif ($query eq "patients") {
 	print $header;

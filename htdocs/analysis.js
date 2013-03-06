@@ -172,6 +172,16 @@
 						var area_under_curve = 0; // Индекс площади
 						var blood_pressure_load = 0; // Индекс времени
 						var duration = intervals.length ? ((intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60) : 1;
+/*
+						for (var i = 0; i < this.systolic.length; i++) {
+							if (this.errors[i] != null || this.artefacts[i] != null)
+								continue;
+							if (period == "day" && !this.day[i])
+								continue;
+							if (period == "night" && this.day[i])
+								continue;
+						}
+*/
 						$.every(intervals, function(interval) {
 							var points = interval.polygon;
 							if (points) {
@@ -184,7 +194,7 @@
 									var height = Math.abs(top[1] - bottom_left[1]);
 									var w = (Math.max(bottom_left[0], bottom_right[0], top[0]) - Math.min(bottom_left[0], bottom_right[0], top[0])) / 1000 / 60 / 60;
 									area = w * height / 2;
-									blood_pressure_load += w;
+									// blood_pressure_load += w;
 									// console.log("%d/%d", w, width);
 								} else if (points.length == 4) { // площадь четырехугольника
 									var _ = points, bottom_left = _[0], bottom_right = _[1], top_right = _[2], top_left = _[3];
@@ -194,7 +204,7 @@
 									var y1 = under ? y_min : y_max;
 									var y2 = under ? y_max : y_min;
 									area = width * Math.abs(y1 - y0) + width * Math.abs(y2 - 1) / 2;
-									blood_pressure_load += width;
+									// blood_pressure_load += width;
 								}
 								area_under_curve += area;
 							}

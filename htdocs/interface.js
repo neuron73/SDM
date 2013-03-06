@@ -604,6 +604,20 @@
 			return measlist;
 		},
 
+		save_meas: function(terminal, patient, n_meas, meas) {
+			this.post({
+				query: "save_meas",
+				terminal: terminal,
+				patient: patient,
+				meas: n_meas,
+				dinner_time: this.time2s(meas.dinner_time),
+				sleep_time: this.time2s(meas.sleep_time),
+				meas_before: this.abp2s(meas.meas_before),
+				meas_after: this.abp2s(meas.meas_after),
+				conditions: meas.conditions
+			});
+		},
+
 		send_meas: function() {
 			this.post({
 				query: "send_meas",
@@ -620,9 +634,6 @@
 				patient: this.navigation.get("patient"),
 				meas: this.navigation.get("meas"),
 			});
-		},
-
-		save_meas: function() {
 		},
 
 		open_meas_panel: function(item, path) {
@@ -915,17 +926,8 @@
 						}
 						conclusion.value = meas.diagnosis;
 
-						$.$("time_sleep").value = meas.sleep_time[0] || "";
-						$.$("time_wake_up").value = meas.sleep_time[1] || "";
-						$.$("time_breakfast").value = meas.dinner_time[0] || "";
-						$.$("time_lunch").value = meas.dinner_time[1] || "";
-						$.$("time_dinner").value = meas.dinner_time[2] || "";
-						$.$("meas_before_1").value = meas.meas_before[0] || "";
-						$.$("meas_before_2").value = meas.meas_before[1] || "";
-						$.$("meas_before_3").value = meas.meas_before[2] || "";
-						$.$("meas_after_1").value = meas.meas_after[0] || "";
-						$.$("meas_after_2").value = meas.meas_after[1] || "";
-						$.$("meas_after_3").value = meas.meas_after[2] || "";
+						this.monitoring_load(meas);
+						this.monitoring_edit(false);
 
 						this.analysis.load(measdata);
 						this.analysis.drawList($.$("abp_meas_list"));
@@ -959,17 +961,38 @@
 		},
 
 		time2s: function(time) {
+			var t = [];
+			for (var i = 0; i < 3; i++) {
+				if (time[i]) {
+					t.push(time[i].split(":")[0] || "");
+					t.push(time[i].split(":")[1] || "");
+				}
+			}
+			return t.join(";");
 		},
 
 		s2abp: function(s) {
 			var abp = [];
 			if (s) {
 				var a = s.split(";");
-				for (var i = 0; i < a.length; i += 2) {
+				for (var i = 0; i < a.length; i += 4) {
 					abp.push(a[i] != "0" && a[i + 1] != "0" ? a[i] + "/" + a[i + 1] : "");
 				}
 			}
 			return abp;
+		},
+
+		abp2s: function(abp) {
+			var m = [];
+			for (var i = 0; i < 3; i++) {
+				if (abp[i]) {
+					m.push(abp[i].split("/")[0]);
+					m.push(abp[i].split("/")[1]);
+					m.push("0");
+					m.push("0");
+				}
+			}
+			return m.join(";");
 		},
 
 		make_card_info: function(info, terminal, patient) {
@@ -1245,6 +1268,46 @@
 				else
 					alert(loc.prog_success);
 			}
+		},
+
+		monitoring_edit: function(edit) {
+			var fields = $.qw("abp_monitoring_type time_sleep time_wake_up time_breakfast time_lunch time_dinner meas_before_1 meas_before_2 meas_before_3 meas_after_1 meas_after_2 meas_after_3");
+			$.every(fields, function(name) {
+				$.$(name).style.display = edit ? "inline" : "none";
+				$.$(name + "_s").style.display = !edit ? "inline" : "none";
+			});
+
+			$.$("monitoring_edit").style.display = !edit ? "inline" : "none";
+			$.$("monitoring_save").style.display = edit ? "inline" : "none";
+		},
+
+		monitoring_save: function() {
+			var meas = {
+				sleep_time: [$.$("time_sleep").value, $.$("time_wake_up").value],
+				dinner_time: [$.$("time_breakfast").value, $.$("time_lunch").value, $.$("time_dinner").value],
+				meas_before: [$.$("meas_before_1").value, $.$("meas_before_2").value, $.$("meas_before_3").value],
+				meas_after: [$.$("meas_after_1").value, $.$("meas_after_2").value, $.$("meas_after_3").value],
+				conditions: $.$("abp_monitoring_type").value
+			};
+			this.monitoring_load(meas);
+			this.save_meas(this.navigation.get("terminal"), this.navigation.get("patient"), this.navigation.get("meas"), meas);
+			this.monitoring_edit(false);
+		},
+
+		monitoring_load: function(meas) {
+			$.$("time_sleep").value = $.$("time_sleep_s").innerHTML = meas.sleep_time[0] || "";
+			$.$("time_wake_up").value = $.$("time_wake_up_s").innerHTML = meas.sleep_time[1] || "";
+			$.$("time_breakfast").value = $.$("time_breakfast_s").innerHTML = meas.dinner_time[0] || "";
+			$.$("time_lunch").value = $.$("time_lunch_s").innerHTML = meas.dinner_time[1] || "";
+			$.$("time_dinner").value = $.$("time_dinner_s").innerHTML = meas.dinner_time[2] || "";
+			$.$("meas_before_1").value = $.$("meas_before_1_s").innerHTML = meas.meas_before[0] || "";
+			$.$("meas_before_2").value = $.$("meas_before_2_s").innerHTML = meas.meas_before[1] || "";
+			$.$("meas_before_3").value = $.$("meas_before_3_s").innerHTML = meas.meas_before[2] || "";
+			$.$("meas_after_1").value = $.$("meas_after_1_s").innerHTML = meas.meas_after[0] || "";
+			$.$("meas_after_2").value = $.$("meas_after_2_s").innerHTML = meas.meas_after[1] || "";
+			$.$("meas_after_3").value = $.$("meas_after_3_s").innerHTML = meas.meas_after[2] || "";
+			$.$("abp_monitoring_type").value = meas.conditions || 0;
+			$.$("abp_monitoring_type_s").innerHTML = $.$("abp_monitoring_type").options[meas.conditions || 0].text;
 		}
 
 	});

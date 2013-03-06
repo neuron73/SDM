@@ -360,6 +360,7 @@
 																						<option value="5">[% working_day2 %]</option>
 																						<option value="6">[% day_off2 %]</option>
 																					</select>
+																					<span id="abp_monitoring_type_s"></span>
 																				</td>
 																			</tr>
 																			<!--
@@ -395,6 +396,7 @@
 																					[% time_sleep %]:
 																				</td>
 																				<td>
+																					<span id="time_sleep_s"></span>
 																					<input type="text" id="time_sleep"></input>
 																				</td>
 																			</tr>
@@ -403,6 +405,7 @@
 																					[% time_wake_up %]:
 																				</td>
 																				<td>
+																					<span id="time_wake_up_s"></span>
 																					<input type="text" id="time_wake_up"></input>
 																				</td>
 																			</tr>
@@ -411,6 +414,7 @@
 																					[% time_breakfast %]:
 																				</td>
 																				<td>
+																					<span id="time_breakfast_s"></span>
 																					<input type="text" id="time_breakfast"></input>
 																				</td>
 																			</tr>
@@ -419,6 +423,7 @@
 																					[% time_lunch %]:
 																				</td>
 																				<td>
+																					<span id="time_lunch_s"></span>
 																					<input type="text" id="time_lunch"></input>
 																				</td>
 																			</tr>
@@ -427,21 +432,34 @@
 																					[% time_dinner %]:
 																				</td>
 																				<td>
+																					<span id="time_dinner_s"></span>
 																					<input type="text" id="time_dinner"></input>
 																				</td>
 																			</tr>
 																		</table>
 																	</td>
-																	<td valign="top">
-																		[% test_meas_before %] <br />
+																	<td valign="top" style="padding-top: 30px">
+																		[% test_meas_before %]: <br />
+																		<span id="meas_before_1_s"></span>
 																		<input type="text" id="meas_before_1"></input> <br />
+																		<span id="meas_before_2_s"></span>
 																		<input type="text" id="meas_before_2"></input> <br />
+																		<span id="meas_before_3_s"></span>
 																		<input type="text" id="meas_before_3"></input> <br />
 																		<br />
 																		[% test_meas_after %]: <br />
+																		<span id="meas_after_1_s"></span>
 																		<input type="text" id="meas_after_1"></input> <br />
+																		<span id="meas_after_2_s"></span>
 																		<input type="text" id="meas_after_2"></input> <br />
+																		<span id="meas_after_3_s"></span>
 																		<input type="text" id="meas_after_3"></input> <br />
+																	</td>
+																</tr>
+																<tr>
+																	<td colspan="2">
+																		<button id="monitoring_edit" onclick="window.UI.monitoring_edit(true)">Изменить</button>
+																		<button id="monitoring_save" onclick="window.UI.monitoring_save()">Сохранить</button>
 																	</td>
 																</tr>
 															</table>
