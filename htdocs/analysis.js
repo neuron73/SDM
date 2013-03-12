@@ -172,16 +172,27 @@
 						var area_under_curve = 0; // Индекс площади
 						var blood_pressure_load = 0; // Индекс времени
 						var duration = intervals.length ? ((intervals[intervals.length - 1].to - intervals[0].from) / 1000 / 60 / 60) : 1;
-/*
-						for (var i = 0; i < this.systolic.length; i++) {
+						var count = 0; // Кол-во измерений
+
+						$.every(this[key2], function(value, i) {
 							if (this.errors[i] != null || this.artefacts[i] != null)
-								continue;
+								return;
 							if (period == "day" && !this.day[i])
-								continue;
+								return;
 							if (period == "night" && this.day[i])
-								continue;
-						}
-*/
+								return;
+							var threshold = key3 == "hyper"
+								? this.abp_graph.border[key2 + "_hyper"][this.day[i] ? "day" : "night"]
+								: this.abp_graph.border[key2 + "_hypo"];
+							if (key3 == "hyper" && value > threshold)
+								blood_pressure_load++;
+							if (key3 == "hypo" && value < threshold)
+								blood_pressure_load++;
+							count++;
+						}, this);
+
+						// console.log("bp(%s, %s): %d / %d", key2, key3, blood_pressure_load, count);
+
 						$.every(intervals, function(interval) {
 							var points = interval.polygon;
 							if (points) {
@@ -209,7 +220,7 @@
 								area_under_curve += area;
 							}
 						});
-						analysis.blood_pressure_load[key2][key3] = format(100 * blood_pressure_load / duration, 1);
+						analysis.blood_pressure_load[key2][key3] = format(100 * blood_pressure_load / count, 1);
 						analysis.area_under_curve[key2][key3] = format(area_under_curve, 1);
 					}, this);
 				}, this);

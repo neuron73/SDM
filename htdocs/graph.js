@@ -20,6 +20,25 @@
 			this.time_scale_height = 60;
 			this.abp_min = 30;
 			this.pulse_min = 30;
+
+			// normal ABP borders
+			this.border = {
+				systolic_hyper: {
+					day: 140,
+					night: 120
+				},
+				diastolic_hyper: {
+					day: 90,
+					night: 80
+				},
+				pulse_high: {
+					day: 100,
+					night: 80
+				},
+				systolic_hypo: 90,
+				diastolic_hypo: 60,
+				pulse_low: 60
+			};
 		},
 
 		on_mouse_move: function(e) {
@@ -83,25 +102,6 @@
 			this.start_time = this.time[0];
 			this.end_time = this.time[this.time.length - 1];
 			this.resize();
-
-			// normal ABP borders
-			this.border = {
-				systolic_hyper: {
-					day: 140,
-					night: 120
-				},
-				diastolic_hyper: {
-					day: 90,
-					night: 80
-				},
-				pulse_high: {
-					day: 100,
-					night: 80
-				},
-				systolic_hypo: 90,
-				diastolic_hypo: 60,
-				pulse_low: 60
-			};
 
 			this.day_intervals = this.get_day_intervals();
 
