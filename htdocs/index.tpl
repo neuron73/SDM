@@ -141,7 +141,7 @@
 		<script>
 			(function() {
 				var $ = require("utils", "web", "json");
-				var SDM = require("SDM", "interface", "loc");
+				var SDM = require("interface", "loc");
 
 				Math.sum = function(A) {
 					var sum = 0;
