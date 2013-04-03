@@ -80,7 +80,7 @@
 			}
 
 			#abp_meas_list .active {
-				background-color: #eeeeee;
+				background-color: #dddde5;
 			}
 
 			a {
